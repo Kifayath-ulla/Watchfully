@@ -20,6 +20,9 @@ declare namespace YT {
     unMute(): void;
     isMuted(): boolean;
     destroy(): void;
+    getPlaybackRate(): number;
+    setPlaybackRate(rate: number): void;
+    getAvailablePlaybackRates(): number[];
   }
 
   interface PlayerOptions {
