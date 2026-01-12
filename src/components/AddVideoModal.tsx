@@ -8,9 +8,8 @@ import { useVideos } from '@/hooks/useVideos';
 import { extractVideoId, extractPlaylistId, fetchVideoDetails, isPlaylistUrl } from '@/lib/youtube';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Film, ListVideo, CheckCircle2 } from 'lucide-react';
+import { Loader2, Film, ListVideo } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 
 interface AddVideoModalProps {
   open: boolean;
@@ -40,15 +39,11 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
   const [customIntent, setCustomIntent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [urlType, setUrlType] = useState<'video' | 'playlist' | null>(null);
-  const [playlistData, setPlaylistData] = useState<PlaylistData | null>(null);
-  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const { addVideo } = useVideos();
   const { toast } = useToast();
 
-  // Detect URL type as user types
   const handleUrlChange = (value: string) => {
     setUrl(value);
-    setPlaylistData(null);
     if (value.trim()) {
       if (isPlaylistUrl(value)) {
         setUrlType('playlist');
@@ -59,53 +54,6 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
       }
     } else {
       setUrlType(null);
-    }
-  };
-
-  const fetchPlaylist = async () => {
-    const playlistId = extractPlaylistId(url);
-    if (!playlistId) {
-      toast({
-        title: 'Invalid playlist URL',
-        description: 'Could not extract playlist ID from the URL',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      console.log('Fetching playlist:', playlistId);
-      
-      const { data, error } = await supabase.functions.invoke('fetch-playlist', {
-        body: { playlistId }
-      });
-
-      if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(error.message || 'Failed to fetch playlist');
-      }
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      console.log('Playlist data received:', data);
-      setPlaylistData(data as PlaylistData);
-      
-      toast({
-        title: 'Playlist loaded',
-        description: `Found ${data.videos.length} videos in "${data.playlistTitle}"`,
-      });
-    } catch (error) {
-      console.error('Error fetching playlist:', error);
-      toast({
-        title: 'Failed to load playlist',
-        description: error instanceof Error ? error.message : 'Could not fetch playlist from YouTube',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -124,18 +72,36 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
     setIsLoading(true);
     
     try {
-      if (urlType === 'playlist' && playlistData) {
-        // Import all videos from the fetched playlist
-        const videos = playlistData.videos;
-        setImportProgress({ current: 0, total: videos.length });
-        
+      if (urlType === 'playlist') {
+        // Directly fetch and import playlist
+        const playlistId = extractPlaylistId(url);
+        if (!playlistId) {
+          toast({
+            title: 'Invalid playlist URL',
+            description: 'Could not extract playlist ID from the URL',
+            variant: 'destructive'
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        const { data, error } = await supabase.functions.invoke('fetch-playlist', {
+          body: { playlistId }
+        });
+
+        if (error) {
+          throw new Error(error.message || 'Failed to fetch playlist');
+        }
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        const playlistData = data as PlaylistData;
         let addedCount = 0;
         let failedCount = 0;
 
-        for (let i = 0; i < videos.length; i++) {
-          const video = videos[i];
-          setImportProgress({ current: i + 1, total: videos.length });
-          
+        for (const video of playlistData.videos) {
           try {
             await addVideo.mutateAsync({
               youtube_video_id: video.videoId,
@@ -155,7 +121,7 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
 
         toast({
           title: 'Playlist imported',
-          description: `Added ${addedCount} videos${failedCount > 0 ? `, ${failedCount} failed or duplicates` : ''}`,
+          description: `Added ${addedCount} videos from "${playlistData.playlistTitle}"${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
         });
       } else {
         // Handle single video
@@ -183,24 +149,21 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
         });
       }
 
-      // Reset form
       setUrl('');
       setIntent('curiosity');
       setCustomIntent('');
-      setPlaylistData(null);
       setUrlType(null);
-      setImportProgress({ current: 0, total: 0 });
       onOpenChange(false);
     } catch (error) {
-      // Error is already handled in useVideos hook
+      toast({
+        title: 'Import failed',
+        description: error instanceof Error ? error.message : 'Could not import from YouTube',
+        variant: 'destructive'
+      });
     } finally {
       setIsLoading(false);
     }
   };
-
-  const progressPercent = importProgress.total > 0 
-    ? Math.round((importProgress.current / importProgress.total) * 100) 
-    : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -238,69 +201,6 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
               )}
             </div>
           </div>
-
-          {/* Playlist fetch button */}
-          {urlType === 'playlist' && !playlistData && (
-            <Button 
-              type="button" 
-              variant="secondary" 
-              className="w-full" 
-              onClick={fetchPlaylist}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Loading playlist...
-                </>
-              ) : (
-                <>
-                  <ListVideo className="h-4 w-4 mr-2" />
-                  Load playlist videos
-                </>
-              )}
-            </Button>
-          )}
-
-          {/* Playlist preview */}
-          {playlistData && (
-            <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
-              <div className="flex items-center gap-3">
-                <img 
-                  src={playlistData.playlistThumbnail} 
-                  alt={playlistData.playlistTitle}
-                  className="w-20 h-12 object-cover rounded"
-                />
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-foreground truncate">{playlistData.playlistTitle}</h4>
-                  <p className="text-sm text-muted-foreground">{playlistData.channelTitle}</p>
-                </div>
-                <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{playlistData.videos.length} videos ready to import</span>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setPlaylistData(null)}
-                >
-                  Change
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Import progress */}
-          {importProgress.total > 0 && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Importing videos...</span>
-                <span className="text-foreground">{importProgress.current} / {importProgress.total}</span>
-              </div>
-              <Progress value={progressPercent} className="h-2" />
-            </div>
-          )}
           
           <div className="space-y-2">
             <Label htmlFor="intent">Why are you watching?</Label>
@@ -335,12 +235,9 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              disabled={isLoading || (urlType === 'playlist' && !playlistData)}
-            >
+            <Button type="submit" disabled={isLoading || !url.trim()}>
               {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {urlType === 'playlist' ? `Import ${playlistData?.videos.length || 0} videos` : 'Add video'}
+              {isLoading ? 'Importing...' : urlType === 'playlist' ? 'Import playlist' : 'Add video'}
             </Button>
           </div>
         </form>
