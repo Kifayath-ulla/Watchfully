@@ -1,12 +1,20 @@
-import { useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useVideos } from '@/hooks/useVideos';
 import { Button } from '@/components/ui/button';
-import { Play, Plus, LogOut } from 'lucide-react';
+import { Play, Plus, LogOut, Trash2 } from 'lucide-react';
+import { AddVideoModal } from '@/components/AddVideoModal';
+import { formatDuration, calculateProgress } from '@/lib/youtube';
+import { Progress } from '@/components/ui/progress';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 export default function Index() {
   const { user, loading, signOut } = useAuth();
+  const { videos, isLoading: videosLoading, deleteVideo } = useVideos();
   const navigate = useNavigate();
+  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -24,13 +32,30 @@ export default function Index() {
 
   if (!user) return null;
 
+  const hasVideos = videos && videos.length > 0;
+
+  const getIntentLabel = (intent: string, customIntent?: string | null) => {
+    if (intent === 'custom' && customIntent) return customIntent;
+    const labels: Record<string, string> = {
+      learning: 'Learning',
+      career: 'Career',
+      curiosity: 'Curiosity',
+      leisure: 'Leisure'
+    };
+    return labels[intent] || intent;
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteVideo.mutateAsync(id);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="font-serif text-xl font-medium text-foreground">
-            Intentional Watch
+            Watchfully
           </h1>
           <Button variant="ghost" size="sm" onClick={signOut}>
             <LogOut className="h-4 w-4 mr-2" />
@@ -49,11 +74,11 @@ export default function Index() {
             Track your progress, set a time commitment, honor your intention.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button size="lg" className="gap-2">
+            <Button size="lg" className="gap-2" disabled={!hasVideos}>
               <Play className="h-4 w-4" />
               Start a focused session
             </Button>
-            <Button size="lg" variant="outline" className="gap-2">
+            <Button size="lg" variant="outline" className="gap-2" onClick={() => setShowAddModal(true)}>
               <Plus className="h-4 w-4" />
               Add a video
             </Button>
@@ -61,20 +86,104 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Empty State */}
+      {/* Video Queue or Empty State */}
       <section className="py-12">
-        <div className="container mx-auto px-4 max-w-2xl">
-          <div className="text-center py-16 px-6 rounded-lg border border-dashed border-border bg-card/30">
-            <p className="text-muted-foreground mb-4">
-              Your queue is empty. Add a YouTube video or playlist to get started.
-            </p>
-            <Button variant="secondary" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add your first video
-            </Button>
-          </div>
+        <div className="container mx-auto px-4 max-w-4xl">
+          {videosLoading ? (
+            <div className="text-center py-16 text-muted-foreground">
+              Loading your videos...
+            </div>
+          ) : hasVideos ? (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-foreground mb-4">Your Queue</h3>
+              <div className="grid gap-4">
+                {videos.map((video) => {
+                  const progress = calculateProgress(
+                    video.current_position_seconds || 0,
+                    video.duration_seconds
+                  );
+                  
+                  return (
+                    <Card key={video.id} className="overflow-hidden">
+                      <CardContent className="p-0">
+                        <div className="flex flex-col sm:flex-row">
+                          {/* Thumbnail */}
+                          <div className="relative sm:w-48 flex-shrink-0">
+                            <img
+                              src={video.thumbnail_url || `https://img.youtube.com/vi/${video.youtube_video_id}/mqdefault.jpg`}
+                              alt={video.title}
+                              className="w-full h-32 sm:h-full object-cover"
+                            />
+                            <div className="absolute bottom-2 right-2 bg-background/80 backdrop-blur-sm px-1.5 py-0.5 rounded text-xs font-medium">
+                              {formatDuration(video.duration_seconds)}
+                            </div>
+                          </div>
+                          
+                          {/* Content */}
+                          <div className="flex-1 p-4">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-foreground line-clamp-2 mb-1">
+                                  {video.title}
+                                </h4>
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  {video.channel_name}
+                                </p>
+                                <div className="flex items-center gap-2 mb-3">
+                                  <Badge variant="secondary" className="text-xs">
+                                    {getIntentLabel(video.intent || 'curiosity', video.custom_intent)}
+                                  </Badge>
+                                  <Badge 
+                                    variant={video.status === 'completed' ? 'default' : 'outline'} 
+                                    className="text-xs"
+                                  >
+                                    {video.status === 'not_started' 
+                                      ? 'Not started' 
+                                      : video.status === 'in_progress' 
+                                        ? 'In progress' 
+                                        : 'Completed'}
+                                  </Badge>
+                                </div>
+                                <div className="space-y-1">
+                                  <Progress value={progress} className="h-1.5" />
+                                  <p className="text-xs text-muted-foreground">
+                                    {progress}% complete
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-muted-foreground hover:text-destructive"
+                                onClick={() => handleDelete(video.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-16 px-6 rounded-lg border border-dashed border-border bg-card/30">
+              <p className="text-muted-foreground mb-4">
+                Your queue is empty. Add a YouTube video or playlist to get started.
+              </p>
+              <Button variant="secondary" className="gap-2" onClick={() => setShowAddModal(true)}>
+                <Plus className="h-4 w-4" />
+                Add your first video
+              </Button>
+            </div>
+          )}
         </div>
       </section>
+
+      <AddVideoModal open={showAddModal} onOpenChange={setShowAddModal} />
     </div>
   );
 }
