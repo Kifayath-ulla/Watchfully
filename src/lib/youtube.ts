@@ -145,6 +145,27 @@ export function extractVideoId(url: string): string | null {
 }
 
 /**
+ * Extract playlist ID from a YouTube URL
+ */
+export function extractPlaylistId(url: string): string | null {
+  const result = parseYouTubeUrl(url);
+  if (result && result.type === 'playlist') {
+    return result.playlistId;
+  }
+  // Also check for playlist parameter in video URLs
+  try {
+    const urlObj = new URL(url);
+    const listId = urlObj.searchParams.get('list');
+    if (listId) {
+      return listId;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+/**
  * Fetch video details using oEmbed (no API key required)
  */
 export async function fetchVideoDetails(videoId: string): Promise<{
@@ -179,5 +200,56 @@ export async function fetchVideoDetails(videoId: string): Promise<{
       thumbnail: getYouTubeThumbnail(videoId, 'high'),
       durationSeconds: 0
     };
+  }
+}
+
+/**
+ * Fetch playlist videos by scraping the playlist page
+ * Returns video IDs from the playlist
+ */
+export async function fetchPlaylistVideos(playlistId: string): Promise<{
+  title: string;
+  videoIds: string[];
+}> {
+  try {
+    // Use a CORS proxy or direct fetch to get playlist page
+    const response = await fetch(
+      `https://www.youtube.com/oembed?url=https://www.youtube.com/playlist?list=${playlistId}&format=json`
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch playlist details');
+    }
+    
+    const data = await response.json();
+    
+    // oEmbed gives us the playlist title but not the video list
+    // We'll return the title and an empty array - videos need to be added manually or via API
+    return {
+      title: data.title || 'YouTube Playlist',
+      videoIds: []
+    };
+  } catch (error) {
+    return {
+      title: 'YouTube Playlist',
+      videoIds: []
+    };
+  }
+}
+
+/**
+ * Check if URL is a playlist URL
+ */
+export function isPlaylistUrl(url: string): boolean {
+  const result = parseYouTubeUrl(url);
+  if (result && result.type === 'playlist') {
+    return true;
+  }
+  // Also check for list parameter
+  try {
+    const urlObj = new URL(url);
+    return urlObj.searchParams.has('list');
+  } catch {
+    return false;
   }
 }
