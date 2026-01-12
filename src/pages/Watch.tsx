@@ -5,18 +5,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { Video } from '@/types/video';
 import { YouTubePlayer, useYouTubePlayer } from '@/components/YouTubePlayer';
 import { useWatchSession } from '@/hooks/useWatchSession';
+import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Play, Pause, Check, Clock } from 'lucide-react';
+import { ArrowLeft, Check, Clock } from 'lucide-react';
 import { formatDuration, calculateProgress } from '@/lib/youtube';
 import { useToast } from '@/hooks/use-toast';
+import { ExitFrictionModal } from '@/components/ExitFrictionModal';
+import { PlaybackControls } from '@/components/PlaybackControls';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Watch() {
   const { videoId } = useParams<{ videoId: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { profile, toggleExitFriction } = useProfile();
   
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,12 +30,14 @@ export default function Watch() {
   const [duration, setDuration] = useState(0);
   const [committedMinutes, setCommittedMinutes] = useState<number | null>(null);
   const [showCommitment, setShowCommitment] = useState(true);
+  const [showExitModal, setShowExitModal] = useState(false);
   
-  const { setPlayer, pause } = useYouTubePlayer();
+  const { setPlayer, play, pause, seekRelative, setPlaybackRate, playbackRate } = useYouTubePlayer();
   const { startSession, endSession, updateProgress, isSessionActive } = useWatchSession();
   
   const lastSaveRef = useRef<number>(0);
-  const saveIntervalRef = useRef<number>(5); // Save every 5 seconds of playback
+  const saveIntervalRef = useRef<number>(5);
+  const sessionStartTimeRef = useRef<number>(0);
 
   // Fetch video data
   useEffect(() => {
@@ -113,6 +120,7 @@ export default function Watch() {
     
     setCommittedMinutes(minutes);
     setShowCommitment(false);
+    sessionStartTimeRef.current = currentTime;
 
     await startSession.mutateAsync({
       videoId: video.id,
@@ -121,7 +129,29 @@ export default function Watch() {
     });
   };
 
-  // Handle back/exit
+  // Calculate watched minutes in current session
+  const getWatchedMinutes = () => {
+    if (!committedMinutes) return 0;
+    const watchedSeconds = currentTime - sessionStartTimeRef.current;
+    return Math.max(0, Math.floor(watchedSeconds / 60));
+  };
+
+  // Handle back/exit button click
+  const handleExitClick = () => {
+    // Check if exit friction is enabled and session is active
+    if (profile?.exit_friction_enabled && isSessionActive && committedMinutes) {
+      const watchedMinutes = getWatchedMinutes();
+      if (watchedMinutes < committedMinutes) {
+        pause();
+        setShowExitModal(true);
+        return;
+      }
+    }
+    
+    handleExit();
+  };
+
+  // Handle confirmed exit
   const handleExit = async () => {
     if (video && isSessionActive) {
       await endSession.mutateAsync({
@@ -130,10 +160,37 @@ export default function Watch() {
         exitReason: 'user_exit'
       });
     } else if (video) {
-      // Save final position even without session
       await updateProgress(video.id, currentTime);
     }
     navigate('/');
+  };
+
+  // Handle log and skip
+  const handleLogSkip = async (reason?: string) => {
+    if (!video || !user) return;
+
+    // Log the skipped session
+    await supabase.from('skipped_sessions').insert({
+      user_id: user.id,
+      video_id: video.id,
+      planned_minutes: committedMinutes,
+      completed_minutes: getWatchedMinutes(),
+      reason
+    });
+
+    await handleExit();
+  };
+
+  // Continue watching after friction modal
+  const handleContinue = () => {
+    setShowExitModal(false);
+    play();
+  };
+
+  // Disable exit friction
+  const handleDisableExitFriction = () => {
+    toggleExitFriction();
+    toast({ title: 'Exit friction disabled', description: 'You can re-enable it in settings.' });
   };
 
   // Mark as complete manually
@@ -153,6 +210,10 @@ export default function Watch() {
     navigate('/');
   };
 
+  // Playback controls
+  const handleSkipBack = (seconds: number) => seekRelative(-seconds);
+  const handleSkipForward = (seconds: number) => seekRelative(seconds);
+
   if (loading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -171,11 +232,12 @@ export default function Watch() {
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={handleExit}>
+          <Button variant="ghost" size="sm" onClick={handleExitClick}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to queue
           </Button>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             {committedMinutes && (
               <Badge variant="secondary" className="gap-1">
                 <Clock className="h-3 w-3" />
@@ -229,7 +291,7 @@ export default function Watch() {
         )}
 
         {/* Video Player */}
-        <div className="mb-6">
+        <div className="mb-4">
           <YouTubePlayer
             videoId={video.youtube_video_id}
             startSeconds={video.current_position_seconds || 0}
@@ -238,6 +300,19 @@ export default function Watch() {
             onTimeUpdate={handleTimeUpdate}
             onEnd={handleVideoEnd}
             autoplay={!showCommitment}
+          />
+        </div>
+
+        {/* Playback Controls */}
+        <div className="mb-6">
+          <PlaybackControls
+            isPlaying={isPlaying}
+            playbackRate={playbackRate}
+            onPlay={play}
+            onPause={pause}
+            onSkipBack={handleSkipBack}
+            onSkipForward={handleSkipForward}
+            onPlaybackRateChange={setPlaybackRate}
           />
         </div>
 
@@ -266,28 +341,36 @@ export default function Watch() {
           </div>
 
           {/* Status */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge variant={isPlaying ? 'default' : 'secondary'}>
-              {isPlaying ? (
-                <>
-                  <Play className="h-3 w-3 mr-1" />
-                  Playing
-                </>
-              ) : (
-                <>
-                  <Pause className="h-3 w-3 mr-1" />
-                  Paused
-                </>
-              )}
+              {isPlaying ? 'Playing' : 'Paused'}
             </Badge>
             {video.intent && (
               <Badge variant="outline">
                 {video.intent === 'custom' ? video.custom_intent : video.intent}
               </Badge>
             )}
+            {committedMinutes && (
+              <Badge variant="outline" className="gap-1">
+                <Clock className="h-3 w-3" />
+                {getWatchedMinutes()}/{committedMinutes}m watched
+              </Badge>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Exit Friction Modal */}
+      <ExitFrictionModal
+        open={showExitModal}
+        onOpenChange={setShowExitModal}
+        onContinue={handleContinue}
+        onLogSkip={handleLogSkip}
+        onExit={handleExit}
+        committedMinutes={committedMinutes || undefined}
+        watchedMinutes={getWatchedMinutes()}
+        onDisableExitFriction={handleDisableExitFriction}
+      />
     </div>
   );
 }

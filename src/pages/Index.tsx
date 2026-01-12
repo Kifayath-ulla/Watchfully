@@ -2,18 +2,32 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVideos } from '@/hooks/useVideos';
+import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
-import { Play, Plus, LogOut, Trash2, PlayCircle } from 'lucide-react';
+import { Play, Plus, LogOut, Trash2, PlayCircle, Settings } from 'lucide-react';
 import { AddVideoModal } from '@/components/AddVideoModal';
 import { formatDuration, calculateProgress } from '@/lib/youtube';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Video } from '@/types/video';
+import { ProgressDashboard } from '@/components/ProgressDashboard';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export default function Index() {
   const { user, loading, signOut } = useAuth();
   const { videos, isLoading: videosLoading, deleteVideo } = useVideos();
+  const { profile, toggleSilentMode, toggleExitFriction } = useProfile();
   const navigate = useNavigate();
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -56,7 +70,6 @@ export default function Index() {
   };
 
   const handleStartSession = () => {
-    // Start with the first incomplete video
     const nextVideo = videos?.find(v => v.status !== 'completed');
     if (nextVideo) {
       navigate(`/watch/${nextVideo.id}`);
@@ -71,10 +84,59 @@ export default function Index() {
           <h1 className="font-serif text-xl font-medium text-foreground">
             Watchfully
           </h1>
-          <Button variant="ghost" size="sm" onClick={signOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign out
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            
+            {/* Settings Sheet */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Settings</SheetTitle>
+                  <SheetDescription>
+                    Customize your watching experience
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="space-y-6 py-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="silent-mode">Silent Mode</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Disable all nudges and reminders
+                      </p>
+                    </div>
+                    <Switch
+                      id="silent-mode"
+                      checked={profile?.silent_mode ?? false}
+                      onCheckedChange={toggleSilentMode}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="exit-friction">Exit Friction</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Ask for confirmation before leaving
+                      </p>
+                    </div>
+                    <Switch
+                      id="exit-friction"
+                      checked={profile?.exit_friction_enabled ?? true}
+                      onCheckedChange={toggleExitFriction}
+                    />
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+            
+            <Button variant="ghost" size="sm" onClick={signOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign out
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -97,6 +159,14 @@ export default function Index() {
               Add a video
             </Button>
           </div>
+        </div>
+      </section>
+
+      {/* Progress Dashboard */}
+      <section className="py-8">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <h3 className="text-lg font-medium text-foreground mb-4">Your Progress</h3>
+          <ProgressDashboard dailyGoalMinutes={profile?.daily_goal_minutes || 45} />
         </div>
       </section>
 

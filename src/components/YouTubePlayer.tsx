@@ -63,13 +63,16 @@ export function YouTubePlayer({
 
     playerRef.current = new window.YT.Player(containerRef.current, {
       videoId,
+      width: '100%',
+      height: '100%',
       playerVars: {
         autoplay: autoplay ? 1 : 0,
         start: Math.floor(startSeconds),
         modestbranding: 1,
         rel: 0,
         enablejsapi: 1,
-        origin: window.location.origin
+        origin: window.location.origin,
+        playsinline: 1
       },
       events: {
         onReady: (event) => {
@@ -122,8 +125,8 @@ export function YouTubePlayer({
   }, []);
 
   return (
-    <div className="relative w-full aspect-video bg-background rounded-lg overflow-hidden">
-      <div ref={containerRef} className="absolute inset-0" />
+    <div className="relative w-full aspect-video bg-muted rounded-lg overflow-hidden shadow-lg">
+      <div ref={containerRef} className="absolute inset-0 w-full h-full" />
       {!isAPIReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted">
           <div className="text-muted-foreground">Loading player...</div>
@@ -136,6 +139,7 @@ export function YouTubePlayer({
 // Hook to get player controls
 export function useYouTubePlayer() {
   const playerRef = useRef<YT.Player | null>(null);
+  const [playbackRate, setPlaybackRateState] = useState(1);
 
   const setPlayer = useCallback((player: YT.Player) => {
     playerRef.current = player;
@@ -153,6 +157,15 @@ export function useYouTubePlayer() {
     playerRef.current?.seekTo(seconds, true);
   }, []);
 
+  const seekRelative = useCallback((delta: number) => {
+    if (playerRef.current) {
+      const current = playerRef.current.getCurrentTime() || 0;
+      const duration = playerRef.current.getDuration() || 0;
+      const newTime = Math.max(0, Math.min(duration, current + delta));
+      playerRef.current.seekTo(newTime, true);
+    }
+  }, []);
+
   const getCurrentTime = useCallback(() => {
     return playerRef.current?.getCurrentTime() || 0;
   }, []);
@@ -161,13 +174,26 @@ export function useYouTubePlayer() {
     return playerRef.current?.getDuration() || 0;
   }, []);
 
+  const setPlaybackRate = useCallback((rate: number) => {
+    if (playerRef.current) {
+      const player = playerRef.current as unknown as { setPlaybackRate?: (rate: number) => void };
+      if (typeof player.setPlaybackRate === 'function') {
+        player.setPlaybackRate(rate);
+        setPlaybackRateState(rate);
+      }
+    }
+  }, []);
+
   return {
     setPlayer,
     play,
     pause,
     seekTo,
+    seekRelative,
     getCurrentTime,
     getDuration,
+    setPlaybackRate,
+    playbackRate,
     player: playerRef.current
   };
 }
