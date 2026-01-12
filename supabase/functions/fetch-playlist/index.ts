@@ -56,8 +56,27 @@ serve(async (req) => {
 
     if (playlistData.error) {
       console.error('YouTube API error (playlist):', playlistData.error);
+      
+      // Provide user-friendly error messages for common issues
+      let userMessage = playlistData.error.message || 'Failed to fetch playlist';
+      
+      if (playlistData.error.code === 403) {
+        if (playlistData.error.message?.includes('API v3 has not been used') || 
+            playlistData.error.message?.includes('disabled')) {
+          userMessage = 'YouTube API is not enabled. Please enable YouTube Data API v3 in Google Cloud Console for your API key project.';
+        } else if (playlistData.error.message?.includes('quota')) {
+          userMessage = 'YouTube API quota exceeded. Please try again later or check your API quota limits.';
+        } else {
+          userMessage = 'Access denied. Please check your YouTube API key permissions.';
+        }
+      } else if (playlistData.error.code === 400) {
+        userMessage = 'Invalid request. Please check the playlist URL format.';
+      } else if (playlistData.error.code === 404) {
+        userMessage = 'Playlist not found. It may be private or deleted.';
+      }
+      
       return new Response(
-        JSON.stringify({ error: playlistData.error.message || 'Failed to fetch playlist' }),
+        JSON.stringify({ error: userMessage, details: playlistData.error.message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -65,7 +84,7 @@ serve(async (req) => {
     if (!playlistData.items || playlistData.items.length === 0) {
       console.error('Playlist not found:', playlistId);
       return new Response(
-        JSON.stringify({ error: 'Playlist not found or is private' }),
+        JSON.stringify({ error: 'Playlist not found or is private. Make sure the playlist is public or unlisted.' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
