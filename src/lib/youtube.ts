@@ -132,3 +132,52 @@ export function getYouTubeEmbedUrl(videoId: string, startSeconds?: number): stri
   
   return url;
 }
+
+/**
+ * Extract video ID from a YouTube URL
+ */
+export function extractVideoId(url: string): string | null {
+  const result = parseYouTubeUrl(url);
+  if (result && result.type === 'video') {
+    return result.videoId;
+  }
+  return null;
+}
+
+/**
+ * Fetch video details using oEmbed (no API key required)
+ */
+export async function fetchVideoDetails(videoId: string): Promise<{
+  title: string;
+  channelTitle: string;
+  thumbnail: string;
+  durationSeconds: number;
+}> {
+  try {
+    const response = await fetch(
+      `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch video details');
+    }
+    
+    const data = await response.json();
+    
+    return {
+      title: data.title || 'Unknown Title',
+      channelTitle: data.author_name || 'Unknown Channel',
+      thumbnail: getYouTubeThumbnail(videoId, 'high'),
+      // oEmbed doesn't return duration, so we'll estimate or set a default
+      durationSeconds: 0
+    };
+  } catch (error) {
+    // Fallback to basic info
+    return {
+      title: 'YouTube Video',
+      channelTitle: 'Unknown Channel',
+      thumbnail: getYouTubeThumbnail(videoId, 'high'),
+      durationSeconds: 0
+    };
+  }
+}
