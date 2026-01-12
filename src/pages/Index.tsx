@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVideos } from "@/hooks/useVideos";
+import { usePlaylists } from "@/hooks/usePlaylists";
 import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
 import { Play, Plus, LogOut, Settings } from "lucide-react";
@@ -11,6 +12,7 @@ import { ProgressDashboard } from "@/components/ProgressDashboard";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BookmarkletHelper } from "@/components/BookmarkletHelper";
 import { SortableVideoCard } from "@/components/SortableVideoCard";
+import { PlaylistGroup } from "@/components/PlaylistGroup";
 import { GoalNotifications } from "@/components/GoalNotifications";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
@@ -34,6 +36,7 @@ import {
 export default function Index() {
   const { user, loading, signOut } = useAuth();
   const { videos, isLoading: videosLoading, deleteVideo, reorderVideos } = useVideos();
+  const { playlists } = usePlaylists();
   const { profile, toggleSilentMode, toggleExitFriction } = useProfile();
   const navigate = useNavigate();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -54,6 +57,27 @@ export default function Index() {
       navigate("/auth", { replace: true });
     }
   }, [user, loading, navigate]);
+
+  // Group videos by playlist
+  const { playlistVideos, standaloneVideos } = useMemo(() => {
+    const playlistMap = new Map<string, Video[]>();
+    const standalone: Video[] = [];
+
+    videos.forEach(video => {
+      if (video.playlist_id) {
+        const existing = playlistMap.get(video.playlist_id) || [];
+        existing.push(video);
+        playlistMap.set(video.playlist_id, existing);
+      } else {
+        standalone.push(video);
+      }
+    });
+
+    return {
+      playlistVideos: playlistMap,
+      standaloneVideos: standalone,
+    };
+  }, [videos]);
 
   if (loading) {
     return (
@@ -210,22 +234,42 @@ export default function Index() {
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
               >
-                <SortableContext
-                  items={videos.map(v => v.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="grid gap-4">
-                    {videos.map((video) => (
-                      <SortableVideoCard
-                        key={video.id}
-                        video={video}
-                        onDelete={handleDelete}
-                        onClick={handleVideoClick}
+                <div className="grid gap-4">
+                  {/* Render playlists as grouped items */}
+                  {playlists.map((playlist) => {
+                    const playlistVideoList = playlistVideos.get(playlist.id);
+                    if (!playlistVideoList || playlistVideoList.length === 0) return null;
+                    
+                    return (
+                      <PlaylistGroup
+                        key={playlist.id}
+                        playlist={playlist}
+                        videos={playlistVideoList}
+                        onVideoClick={handleVideoClick}
+                        onVideoDelete={handleDelete}
                         getIntentLabel={getIntentLabel}
                       />
-                    ))}
-                  </div>
-                </SortableContext>
+                    );
+                  })}
+
+                  {/* Render standalone videos */}
+                  {standaloneVideos.length > 0 && (
+                    <SortableContext
+                      items={standaloneVideos.map(v => v.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {standaloneVideos.map((video) => (
+                        <SortableVideoCard
+                          key={video.id}
+                          video={video}
+                          onDelete={handleDelete}
+                          onClick={handleVideoClick}
+                          getIntentLabel={getIntentLabel}
+                        />
+                      ))}
+                    </SortableContext>
+                  )}
+                </div>
               </DndContext>
             </div>
           ) : (
