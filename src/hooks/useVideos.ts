@@ -3,12 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Video, VideoIntent, VideoStatus } from '@/types/video';
 import { useToast } from '@/hooks/use-toast';
+import { useCallback } from 'react';
 
 export function useVideos() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
   const videosQuery = useQuery({
     queryKey: ['videos', user?.id],
     queryFn: async () => {
@@ -192,6 +192,34 @@ export function useVideos() {
     }
   });
 
+  const reorderVideos = useCallback(async (reorderedVideos: Video[]) => {
+    if (!user) return;
+    
+    // Optimistically update the cache
+    queryClient.setQueryData(['videos', user.id], reorderedVideos);
+    
+    // Update playlist_order in database for each video
+    const updates = reorderedVideos.map((video, index) => 
+      supabase
+        .from('videos')
+        .update({ playlist_order: index })
+        .eq('id', video.id)
+        .eq('user_id', user.id)
+    );
+    
+    try {
+      await Promise.all(updates);
+    } catch (error) {
+      // Revert on error
+      queryClient.invalidateQueries({ queryKey: ['videos', user.id] });
+      toast({
+        title: 'Failed to reorder',
+        description: 'Could not save the new order.',
+        variant: 'destructive'
+      });
+    }
+  }, [user, queryClient, toast]);
+
   return {
     videos: videosQuery.data || [],
     isLoading: videosQuery.isLoading,
@@ -200,6 +228,7 @@ export function useVideos() {
     updateVideoProgress,
     updateVideoIntent,
     deleteVideo,
-    markComplete
+    markComplete,
+    reorderVideos
   };
 }
