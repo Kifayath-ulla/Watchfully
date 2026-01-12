@@ -260,33 +260,48 @@ export default function Watch() {
               How much time do you have?
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Set a time commitment to watch intentionally.
+              Enter your time commitment in minutes to watch intentionally.
             </p>
-            <div className="flex flex-wrap gap-2">
-              {[5, 10, 15, 30, 45, 60].map((mins) => {
-                const canComplete = (mins * 60) >= remainingSeconds;
-                return (
-                  <Button
-                    key={mins}
-                    variant={canComplete ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleStartWatching(mins)}
-                  >
-                    {mins}m
-                    {canComplete && (
-                      <span className="ml-1 text-xs opacity-75">(can finish)</span>
-                    )}
-                  </Button>
-                );
-              })}
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const minutes = parseInt(formData.get('minutes') as string, 10);
+                if (minutes > 0 && minutes <= 180) {
+                  handleStartWatching(minutes);
+                }
+              }}
+              className="flex items-center gap-3"
+            >
+              <div className="relative flex-1 max-w-xs">
+                <input
+                  type="number"
+                  name="minutes"
+                  min="1"
+                  max="180"
+                  defaultValue="30"
+                  placeholder="Enter minutes..."
+                  className="w-full h-10 px-4 pr-12 rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  min
+                </span>
+              </div>
+              <Button type="submit" size="default">
+                Start watching
+              </Button>
               <Button
+                type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowCommitment(false)}
               >
                 Skip
               </Button>
-            </div>
+            </form>
+            <p className="text-xs text-muted-foreground mt-3">
+              {Math.ceil(remainingSeconds / 60)} minutes remaining in this video
+            </p>
           </div>
         )}
 
