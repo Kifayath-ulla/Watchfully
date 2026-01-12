@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVideos } from '@/hooks/useVideos';
 import { Button } from '@/components/ui/button';
-import { Play, Plus, LogOut, Trash2 } from 'lucide-react';
+import { Play, Plus, LogOut, Trash2, PlayCircle } from 'lucide-react';
 import { AddVideoModal } from '@/components/AddVideoModal';
 import { formatDuration, calculateProgress } from '@/lib/youtube';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Video } from '@/types/video';
 
 export default function Index() {
   const { user, loading, signOut } = useAuth();
@@ -45,8 +46,21 @@ export default function Index() {
     return labels[intent] || intent;
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     await deleteVideo.mutateAsync(id);
+  };
+
+  const handleVideoClick = (video: Video) => {
+    navigate(`/watch/${video.id}`);
+  };
+
+  const handleStartSession = () => {
+    // Start with the first incomplete video
+    const nextVideo = videos?.find(v => v.status !== 'completed');
+    if (nextVideo) {
+      navigate(`/watch/${nextVideo.id}`);
+    }
   };
 
   return (
@@ -74,7 +88,7 @@ export default function Index() {
             Track your progress, set a time commitment, honor your intention.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button size="lg" className="gap-2" disabled={!hasVideos}>
+            <Button size="lg" className="gap-2" disabled={!hasVideos} onClick={handleStartSession}>
               <Play className="h-4 w-4" />
               Start a focused session
             </Button>
@@ -104,16 +118,24 @@ export default function Index() {
                   );
                   
                   return (
-                    <Card key={video.id} className="overflow-hidden">
+                    <Card 
+                      key={video.id} 
+                      className="overflow-hidden cursor-pointer transition-all hover:ring-2 hover:ring-primary/50 hover:shadow-lg"
+                      onClick={() => handleVideoClick(video)}
+                    >
                       <CardContent className="p-0">
                         <div className="flex flex-col sm:flex-row">
                           {/* Thumbnail */}
-                          <div className="relative sm:w-48 flex-shrink-0">
+                          <div className="relative sm:w-48 flex-shrink-0 group">
                             <img
                               src={video.thumbnail_url || `https://img.youtube.com/vi/${video.youtube_video_id}/mqdefault.jpg`}
                               alt={video.title}
                               className="w-full h-32 sm:h-full object-cover"
                             />
+                            {/* Play overlay */}
+                            <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <PlayCircle className="h-12 w-12 text-primary" />
+                            </div>
                             <div className="absolute bottom-2 right-2 bg-background/80 backdrop-blur-sm px-1.5 py-0.5 rounded text-xs font-medium">
                               {formatDuration(video.duration_seconds)}
                             </div>
@@ -156,7 +178,7 @@ export default function Index() {
                                 variant="ghost"
                                 size="icon"
                                 className="text-muted-foreground hover:text-destructive"
-                                onClick={() => handleDelete(video.id)}
+                                onClick={(e) => handleDelete(e, video.id)}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
