@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +10,7 @@ export function GoalNotifications() {
   const { user } = useAuth();
   const { profile, updateProfile } = useProfile();
   const { toast } = useToast();
+  const [dismissed, setDismissed] = useState(false);
 
   const checkGoalProgress = useCallback(async () => {
     if (!user || profile?.silent_mode || !profile?.browser_notifications_enabled) return;
@@ -87,6 +88,10 @@ export function GoalNotifications() {
     }
   };
 
+  const handleDismiss = () => {
+    setDismissed(true);
+  };
+
   // Check goal progress periodically (every 30 minutes)
   useEffect(() => {
     if (!user || profile?.silent_mode) return;
@@ -100,13 +105,14 @@ export function GoalNotifications() {
     return () => clearInterval(interval);
   }, [user, profile?.silent_mode, checkGoalProgress]);
 
-  // Show notification permission prompt if not yet granted
+  // Show notification permission prompt if not yet granted and not dismissed
   if (
     profile && 
     !profile.browser_notifications_enabled && 
     !profile.silent_mode && 
     'Notification' in window && 
-    Notification.permission === 'default'
+    Notification.permission === 'default' &&
+    !dismissed
   ) {
     return (
       <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4">
@@ -127,7 +133,7 @@ export function GoalNotifications() {
                 <Button 
                   size="sm" 
                   variant="ghost" 
-                  onClick={() => updateProfile.mutate({ browser_notifications_enabled: false })}
+                  onClick={handleDismiss}
                 >
                   Not now
                 </Button>
