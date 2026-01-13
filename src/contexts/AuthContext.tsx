@@ -37,7 +37,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Handle browser close for non-persistent sessions
+    const handleBeforeUnload = () => {
+      if (sessionStorage.getItem('watchfully-session-temp') === 'true') {
+        supabase.auth.signOut();
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, []);
 
   const signUp = async (email: string, password: string, displayName?: string) => {
@@ -58,21 +70,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string, rememberMe?: boolean) => {
-    // Set session persistence based on remember me
-    // When rememberMe is true, session persists across browser restarts
-    // When false, session ends when browser closes (using sessionStorage)
-    if (!rememberMe) {
-      // Short-lived session - will be cleared when browser closes
-      await supabase.auth.setSession({ 
-        access_token: '', 
-        refresh_token: '' 
-      }).catch(() => {}); // Clear any existing session first
-    }
-    
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
+    
+    // Store remember me preference - if not checked, we'll clear on browser close
+    if (!rememberMe && data?.session) {
+      // Mark this session as non-persistent
+      sessionStorage.setItem('watchfully-session-temp', 'true');
+    } else {
+      sessionStorage.removeItem('watchfully-session-temp');
+    }
     
     return { error: error as Error | null };
   };

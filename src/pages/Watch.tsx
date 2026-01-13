@@ -467,6 +467,9 @@ export default function Watch() {
                 onTimeUpdate={handleTimeUpdate}
                 onEnd={handleVideoEnd}
                 autoplay={!showCommitment}
+                videoDuration={video.duration_seconds}
+                videoProgress={video.current_position_seconds || 0}
+                videoTitle={video.title}
               />
             </div>
 

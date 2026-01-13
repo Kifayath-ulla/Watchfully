@@ -41,9 +41,13 @@ export function QueueFilters({
         <SelectContent className="bg-popover">
           <SelectItem value="all">All Videos</SelectItem>
           {playlists.length > 0 && (
+            <SelectItem value="playlists-only" className="font-medium">📁 Playlists Only</SelectItem>
+          )}
+          {standaloneVideos.length > 0 && (
+            <SelectItem value="standalone-only" className="font-medium">📹 Videos Only</SelectItem>
+          )}
+          {playlists.length > 0 && (
             <>
-              <SelectItem value="playlists-only" className="font-medium">📁 Playlists Only</SelectItem>
-              <SelectItem value="standalone-only" className="font-medium">📹 Standalone Only</SelectItem>
               <div className="px-2 py-1 text-xs text-muted-foreground border-t border-border mt-1 pt-1">
                 Playlists
               </div>
