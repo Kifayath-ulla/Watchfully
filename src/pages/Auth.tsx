@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -96,6 +96,7 @@ export default function Auth() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [fadeIn, setFadeIn] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { user, signIn, signUp, resetPassword } = useAuth();
   const navigate = useNavigate();
@@ -413,17 +414,27 @@ export default function Auth() {
                     <Label htmlFor="password" className="text-sm font-medium">
                       Password
                     </Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        if (errors.password) setErrors({ ...errors, password: undefined });
-                      }}
-                      className={`bg-background ${errors.password ? "border-destructive" : ""}`}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (errors.password) setErrors({ ...errors, password: undefined });
+                        }}
+                        className={`bg-background pr-10 ${errors.password ? "border-destructive" : ""}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                     {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
                   </div>
                 )}
