@@ -19,12 +19,13 @@ export function TimeCommitmentCard({
   const sessionStats = useMemo(() => {
     if (minutes <= 0) return null;
     
-    const sessionsNeeded = Math.ceil(remainingMinutes / minutes);
+    const sessionsNeeded = remainingMinutes / minutes;
+    const sessionsDisplay = sessionsNeeded <= 1 ? 1 : parseFloat(sessionsNeeded.toFixed(1));
     const willComplete = minutes >= remainingMinutes;
     const percentagePerSession = Math.min(100, Math.round((minutes / remainingMinutes) * 100));
     
     return {
-      sessionsNeeded,
+      sessionsNeeded: sessionsDisplay,
       willComplete,
       percentagePerSession,
     };
