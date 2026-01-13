@@ -44,4 +44,4 @@ Made with love by **kiffu <3**
 Feedback, issues, and pull requests are welcome.
 If you’re using this to learn or build — that’s already a win.
 
-*If you like the idea, star the repo and share it:p *
+*If you like the idea, star the repo and share it:p*
