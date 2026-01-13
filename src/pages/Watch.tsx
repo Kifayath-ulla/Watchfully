@@ -15,6 +15,7 @@ import { formatDuration, calculateProgress } from '@/lib/youtube';
 import { useToast } from '@/hooks/use-toast';
 import { ExitFrictionModal } from '@/components/ExitFrictionModal';
 import { PlaybackControls } from '@/components/PlaybackControls';
+import { TimeCommitmentCard } from '@/components/TimeCommitmentCard';
 import { PlaylistSidebar } from '@/components/PlaylistSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { cn } from '@/lib/utils';
@@ -411,56 +412,11 @@ export default function Watch() {
           <div className="max-w-5xl mx-auto p-4 lg:p-6 space-y-4">
             {/* Commitment Selection */}
             {showCommitment && (
-              <div className="p-4 lg:p-6 rounded-lg border border-border bg-card">
-                <h3 className="text-lg font-medium text-foreground mb-2">
-                  How much time do you have?
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Enter your time commitment in minutes to watch intentionally.
-                </p>
-                <form 
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const formData = new FormData(e.currentTarget);
-                    const minutes = parseInt(formData.get('minutes') as string, 10);
-                    if (minutes > 0 && minutes <= 180) {
-                      handleStartWatching(minutes);
-                    }
-                  }}
-                  className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
-                >
-                  <div className="relative flex-1 max-w-xs">
-                    <input
-                      type="number"
-                      name="minutes"
-                      min="1"
-                      max="180"
-                      defaultValue="30"
-                      placeholder="Enter minutes..."
-                      className="w-full h-10 px-4 pr-12 rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                      min
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button type="submit" size="default">
-                      Start watching
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowCommitment(false)}
-                    >
-                      Skip
-                    </Button>
-                  </div>
-                </form>
-                <p className="text-xs text-muted-foreground mt-3">
-                  {Math.ceil(remainingSeconds / 60)} minutes remaining in this video
-                </p>
-              </div>
+              <TimeCommitmentCard
+                remainingSeconds={remainingSeconds}
+                onStartWatching={handleStartWatching}
+                onSkip={() => setShowCommitment(false)}
+              />
             )}
 
             {/* Video Player */}

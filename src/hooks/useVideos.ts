@@ -192,10 +192,17 @@ export function useVideos() {
     }
   });
 
-  // Bulk mark as complete
+  // Bulk mark as complete (returns previous states for undo)
   const bulkMarkComplete = useMutation({
     mutationFn: async (videoIds: string[]) => {
       if (!user) throw new Error('Not authenticated');
+      
+      // Get current states before updating
+      const { data: previousStates } = await supabase
+        .from('videos')
+        .select('id, status, completed_at')
+        .in('id', videoIds)
+        .eq('user_id', user.id);
       
       const { error } = await supabase
         .from('videos')
@@ -207,20 +214,48 @@ export function useVideos() {
         .eq('user_id', user.id);
       
       if (error) throw error;
+      return previousStates;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['videos', user?.id] });
+    }
+  });
+
+  // Undo bulk complete
+  const undoBulkComplete = useMutation({
+    mutationFn: async (previousStates: { id: string; status: VideoStatus; completed_at: string | null }[]) => {
+      if (!user) throw new Error('Not authenticated');
+      
+      const updates = previousStates.map((state) =>
+        supabase
+          .from('videos')
+          .update({ status: state.status, completed_at: state.completed_at })
+          .eq('id', state.id)
+          .eq('user_id', user.id)
+      );
+      
+      await Promise.all(updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos', user?.id] });
       toast({
-        title: 'Videos completed',
-        description: 'All selected videos marked as complete.',
+        title: 'Undo successful',
+        description: 'Videos restored to previous state.',
       });
     }
   });
 
-  // Bulk delete
+  // Bulk delete (returns deleted videos for undo)
   const bulkDelete = useMutation({
     mutationFn: async (videoIds: string[]) => {
       if (!user) throw new Error('Not authenticated');
+      
+      // Get full video data before deleting for undo
+      const { data: deletedVideos } = await supabase
+        .from('videos')
+        .select('*')
+        .in('id', videoIds)
+        .eq('user_id', user.id);
       
       const { error } = await supabase
         .from('videos')
@@ -229,17 +264,34 @@ export function useVideos() {
         .eq('user_id', user.id);
       
       if (error) throw error;
+      return deletedVideos;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['videos', user?.id] });
+    }
+  });
+
+  // Undo bulk delete
+  const undoBulkDelete = useMutation({
+    mutationFn: async (videos: Video[]) => {
+      if (!user) throw new Error('Not authenticated');
+      
+      const { error } = await supabase
+        .from('videos')
+        .insert(videos);
+      
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos', user?.id] });
       toast({
-        title: 'Videos deleted',
-        description: 'Selected videos have been removed.',
+        title: 'Undo successful',
+        description: 'Videos have been restored.',
       });
     }
   });
 
-  // Bulk update intent
+  // Bulk update intent (returns previous states for undo)
   const bulkUpdateIntent = useMutation({
     mutationFn: async ({ videoIds, intent, customIntent }: {
       videoIds: string[];
@@ -247,6 +299,13 @@ export function useVideos() {
       customIntent?: string;
     }) => {
       if (!user) throw new Error('Not authenticated');
+      
+      // Get current states before updating
+      const { data: previousStates } = await supabase
+        .from('videos')
+        .select('id, intent, custom_intent')
+        .in('id', videoIds)
+        .eq('user_id', user.id);
       
       const { error } = await supabase
         .from('videos')
@@ -258,12 +317,33 @@ export function useVideos() {
         .eq('user_id', user.id);
       
       if (error) throw error;
+      return previousStates;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['videos', user?.id] });
+    }
+  });
+
+  // Undo bulk intent update
+  const undoBulkIntent = useMutation({
+    mutationFn: async (previousStates: { id: string; intent: VideoIntent; custom_intent: string | null }[]) => {
+      if (!user) throw new Error('Not authenticated');
+      
+      const updates = previousStates.map((state) =>
+        supabase
+          .from('videos')
+          .update({ intent: state.intent, custom_intent: state.custom_intent })
+          .eq('id', state.id)
+          .eq('user_id', user.id)
+      );
+      
+      await Promise.all(updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos', user?.id] });
       toast({
-        title: 'Intent updated',
-        description: 'Selected videos have been updated.',
+        title: 'Undo successful',
+        description: 'Videos restored to previous intent.',
       });
     }
   });
@@ -308,6 +388,9 @@ export function useVideos() {
     bulkMarkComplete,
     bulkDelete,
     bulkUpdateIntent,
+    undoBulkComplete,
+    undoBulkDelete,
+    undoBulkIntent,
     reorderVideos
   };
 }
