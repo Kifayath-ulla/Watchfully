@@ -7,19 +7,22 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { ArrowLeft } from 'lucide-react';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
 
+type AuthMode = 'login' | 'signup' | 'forgot';
+
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn, signUp, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -37,9 +40,11 @@ export default function Auth() {
       newErrors.email = emailResult.error.errors[0].message;
     }
     
-    const passwordResult = passwordSchema.safeParse(password);
-    if (!passwordResult.success) {
-      newErrors.password = passwordResult.error.errors[0].message;
+    if (mode !== 'forgot') {
+      const passwordResult = passwordSchema.safeParse(password);
+      if (!passwordResult.success) {
+        newErrors.password = passwordResult.error.errors[0].message;
+      }
     }
     
     setErrors(newErrors);
@@ -54,7 +59,23 @@ export default function Auth() {
     setIsSubmitting(true);
     
     try {
-      if (isLogin) {
+      if (mode === 'forgot') {
+        const { error } = await resetPassword(email);
+        if (error) {
+          toast({
+            title: 'Reset failed',
+            description: error.message,
+            variant: 'destructive'
+          });
+        } else {
+          toast({
+            title: 'Check your email',
+            description: 'We sent you a password reset link.',
+          });
+          setMode('login');
+          setEmail('');
+        }
+      } else if (mode === 'login') {
         const { error } = await signIn(email, password);
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
@@ -99,6 +120,22 @@ export default function Auth() {
     }
   };
 
+  const getTitle = () => {
+    switch (mode) {
+      case 'login': return 'Welcome back';
+      case 'signup': return 'Create an account';
+      case 'forgot': return 'Reset password';
+    }
+  };
+
+  const getDescription = () => {
+    switch (mode) {
+      case 'login': return 'Sign in to continue your focused sessions';
+      case 'signup': return 'Start your journey of intentional watching';
+      case 'forgot': return 'Enter your email to receive a reset link';
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-8">
@@ -114,18 +151,29 @@ export default function Auth() {
 
         <Card className="border-border/50 shadow-sm">
           <CardHeader className="space-y-1 pb-4">
+            {mode === 'forgot' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login');
+                  setErrors({});
+                }}
+                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2 w-fit"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to sign in
+              </button>
+            )}
             <CardTitle className="text-xl font-medium">
-              {isLogin ? 'Welcome back' : 'Create an account'}
+              {getTitle()}
             </CardTitle>
             <CardDescription>
-              {isLogin 
-                ? 'Sign in to continue your focused sessions' 
-                : 'Start your journey of intentional watching'}
+              {getDescription()}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
+              {mode === 'signup' && (
                 <div className="space-y-2">
                   <Label htmlFor="displayName" className="text-sm font-medium">
                     Display name
@@ -161,25 +209,40 @@ export default function Auth() {
                 )}
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium">
-                  Password
-                </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (errors.password) setErrors({ ...errors, password: undefined });
+              {mode !== 'forgot' && (
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium">
+                    Password
+                  </Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (errors.password) setErrors({ ...errors, password: undefined });
+                    }}
+                    className={`bg-background ${errors.password ? 'border-destructive' : ''}`}
+                  />
+                  {errors.password && (
+                    <p className="text-sm text-destructive">{errors.password}</p>
+                  )}
+                </div>
+              )}
+
+              {mode === 'login' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('forgot');
+                    setErrors({});
                   }}
-                  className={`bg-background ${errors.password ? 'border-destructive' : ''}`}
-                />
-                {errors.password && (
-                  <p className="text-sm text-destructive">{errors.password}</p>
-                )}
-              </div>
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Forgot password?
+                </button>
+              )}
 
               <Button 
                 type="submit" 
@@ -188,24 +251,28 @@ export default function Auth() {
               >
                 {isSubmitting 
                   ? 'Please wait...' 
-                  : isLogin ? 'Sign in' : 'Create account'}
+                  : mode === 'login' ? 'Sign in' 
+                  : mode === 'signup' ? 'Create account'
+                  : 'Send reset link'}
               </Button>
             </form>
 
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  setErrors({});
-                }}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-250"
-              >
-                {isLogin 
-                  ? "Don't have an account? Sign up" 
-                  : 'Already have an account? Sign in'}
-              </button>
-            </div>
+            {mode !== 'forgot' && (
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode(mode === 'login' ? 'signup' : 'login');
+                    setErrors({});
+                  }}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-250"
+                >
+                  {mode === 'login' 
+                    ? "Don't have an account? Sign up" 
+                    : 'Already have an account? Sign in'}
+                </button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
