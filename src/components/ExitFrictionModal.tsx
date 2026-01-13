@@ -116,8 +116,8 @@ export function ExitFrictionModal({
           </div>
         </div>
 
-        <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="default" onClick={onContinue} className="gap-2">
+        <AlertDialogFooter className="flex-row justify-center gap-2 sm:justify-center">
+          <Button variant="default" onClick={onContinue} className="gap-2 flex-1 sm:flex-none">
             <Play className="h-4 w-4" />
             Continue watching
           </Button>
@@ -125,11 +125,12 @@ export function ExitFrictionModal({
             variant="secondary" 
             onClick={handleLogSkip}
             disabled={!selectedReason}
+            className="flex-1 sm:flex-none"
           >
             Log & exit
           </Button>
           <AlertDialogCancel asChild>
-            <Button variant="ghost" onClick={handleExit} className="gap-2">
+            <Button variant="outline" onClick={handleExit} className="gap-2 flex-1 sm:flex-none">
               <LogOut className="h-4 w-4" />
               Just exit
             </Button>

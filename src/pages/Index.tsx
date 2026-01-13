@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVideos } from "@/hooks/useVideos";
@@ -10,12 +10,12 @@ import { AddVideoModal } from "@/components/AddVideoModal";
 import { Video, VideoStatus, VideoIntent } from "@/types/video";
 import { ProgressDashboard } from "@/components/ProgressDashboard";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { BookmarkletHelper } from "@/components/BookmarkletHelper";
 import { SortableVideoCard } from "@/components/SortableVideoCard";
 import { PlaylistGroup } from "@/components/PlaylistGroup";
 import { GoalNotifications } from "@/components/GoalNotifications";
 import { QueueFilters } from "@/components/QueueFilters";
 import { BulkActionBar } from "@/components/BulkActionBar";
+import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -47,8 +47,9 @@ import {
 
 export default function Index() {
   const { user, loading, signOut } = useAuth();
-  const { videos, isLoading: videosLoading, deleteVideo, reorderVideos, bulkMarkComplete, bulkDelete, bulkUpdateIntent } = useVideos();
+  const { videos, isLoading: videosLoading, deleteVideo, reorderVideos, bulkMarkComplete, bulkDelete, bulkUpdateIntent, undoBulkComplete, undoBulkDelete, undoBulkIntent } = useVideos();
   const { playlists, deletePlaylist } = usePlaylists();
+  const { toast } = useToast();
   const { profile, toggleSilentMode, toggleExitFriction } = useProfile();
   const navigate = useNavigate();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -147,26 +148,56 @@ export default function Index() {
     setSelectionMode(false);
   };
 
+  const selectAll = () => {
+    const allIds = new Set(videos.map(v => v.id));
+    setSelectedVideoIds(allIds);
+  };
+
   const handleBulkComplete = async () => {
     if (selectedVideoIds.size === 0) return;
-    await bulkMarkComplete.mutateAsync(Array.from(selectedVideoIds));
+    const previousStates = await bulkMarkComplete.mutateAsync(Array.from(selectedVideoIds));
     clearSelection();
+    toast({
+      title: `${selectedVideoIds.size} videos marked complete`,
+      action: previousStates ? (
+        <Button variant="outline" size="sm" onClick={() => undoBulkComplete.mutate(previousStates)}>
+          Undo
+        </Button>
+      ) : undefined,
+    });
   };
 
   const handleBulkDelete = async () => {
     if (selectedVideoIds.size === 0) return;
-    await bulkDelete.mutateAsync(Array.from(selectedVideoIds));
+    const count = selectedVideoIds.size;
+    const deletedVideos = await bulkDelete.mutateAsync(Array.from(selectedVideoIds));
     clearSelection();
+    toast({
+      title: `${count} videos deleted`,
+      action: deletedVideos ? (
+        <Button variant="outline" size="sm" onClick={() => undoBulkDelete.mutate(deletedVideos)}>
+          Undo
+        </Button>
+      ) : undefined,
+    });
   };
 
   const handleBulkIntent = async (intent: VideoIntent, customIntent?: string) => {
     if (selectedVideoIds.size === 0) return;
-    await bulkUpdateIntent.mutateAsync({ 
+    const previousStates = await bulkUpdateIntent.mutateAsync({ 
       videoIds: Array.from(selectedVideoIds), 
       intent,
       customIntent 
     });
     clearSelection();
+    toast({
+      title: `Intent updated for ${selectedVideoIds.size} videos`,
+      action: previousStates ? (
+        <Button variant="outline" size="sm" onClick={() => undoBulkIntent.mutate(previousStates)}>
+          Undo
+        </Button>
+      ) : undefined,
+    });
   };
 
   // Playlist deletion
@@ -376,7 +407,9 @@ export default function Index() {
               {selectedVideoIds.size > 0 && (
                 <BulkActionBar
                   selectedCount={selectedVideoIds.size}
+                  totalCount={videos.length}
                   onClear={clearSelection}
+                  onSelectAll={selectAll}
                   onMarkComplete={handleBulkComplete}
                   onDelete={handleBulkDelete}
                   onChangeIntent={handleBulkIntent}
@@ -453,13 +486,6 @@ export default function Index() {
               </Button>
             </div>
           )}
-        </div>
-      </section>
-
-      {/* Bookmarklet Helper */}
-      <section className="py-8 pb-16">
-        <div className="container mx-auto px-4 max-w-md">
-          <BookmarkletHelper />
         </div>
       </section>
 

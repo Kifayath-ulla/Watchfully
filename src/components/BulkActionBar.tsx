@@ -10,13 +10,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Check, Trash2, X, Tag } from 'lucide-react';
+import { Check, Trash2, X, Tag, CheckSquare } from 'lucide-react';
 import { VideoIntent } from '@/types/video';
 import { useState } from 'react';
 
 interface BulkActionBarProps {
   selectedCount: number;
+  totalCount: number;
   onClear: () => void;
+  onSelectAll: () => void;
   onMarkComplete: () => void;
   onDelete: () => void;
   onChangeIntent: (intent: VideoIntent, customIntent?: string) => void;
@@ -25,7 +27,9 @@ interface BulkActionBarProps {
 
 export function BulkActionBar({
   selectedCount,
+  totalCount,
   onClear,
+  onSelectAll,
   onMarkComplete,
   onDelete,
   onChangeIntent,
@@ -33,6 +37,7 @@ export function BulkActionBar({
 }: BulkActionBarProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [intentValue, setIntentValue] = useState<string>('');
+  const allSelected = selectedCount === totalCount && totalCount > 0;
 
   const handleIntentChange = (value: string) => {
     setIntentValue(value);
@@ -42,7 +47,7 @@ export function BulkActionBar({
 
   return (
     <>
-      <div className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+      <div className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/20 rounded-lg flex-wrap">
         <Button variant="ghost" size="sm" onClick={onClear} className="h-8 px-2">
           <X className="h-4 w-4" />
         </Button>
@@ -50,10 +55,21 @@ export function BulkActionBar({
         <span className="text-sm font-medium text-foreground">
           {selectedCount} video{selectedCount !== 1 ? 's' : ''} selected
         </span>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onSelectAll}
+          disabled={allSelected}
+          className="h-8 text-xs"
+        >
+          <CheckSquare className="h-3.5 w-3.5 mr-1" />
+          {allSelected ? 'All selected' : 'Select all'}
+        </Button>
         
         <div className="flex-1" />
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button 
             variant="secondary" 
             size="sm" 
