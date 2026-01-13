@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -252,6 +253,11 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background overflow-hidden relative">
+      {/* Theme Toggle */}
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle />
+      </div>
+      
       {/* CSS for doodle animations */}
       <style>{`
         @keyframes doodleFloat {
