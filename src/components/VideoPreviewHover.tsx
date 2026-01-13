@@ -33,10 +33,11 @@ export function VideoPreviewHover({ video, children }: VideoPreviewHoverProps) {
         {children}
       </HoverCardTrigger>
       <HoverCardContent 
-        side="right" 
-        align="start" 
-        className="w-80 p-0 overflow-hidden"
-        sideOffset={8}
+        side="top" 
+        align="center" 
+        className="w-72 p-0 overflow-hidden z-50"
+        sideOffset={12}
+        collisionPadding={16}
       >
         {/* Video Preview */}
         <div className="relative aspect-video bg-muted">

@@ -45,7 +45,8 @@ export default function Watch() {
   
   const lastSaveRef = useRef<number>(0);
   const saveIntervalRef = useRef<number>(5);
-  const sessionStartTimeRef = useRef<number>(0);
+  const sessionStartTimeRef = useRef<number>(0); // Real time when session started (Date.now())
+  const realTimeStartRef = useRef<number>(0); // Real wall-clock time tracking
 
   // Fetch video and playlist data
   useEffect(() => {
@@ -210,6 +211,7 @@ export default function Watch() {
     setCommittedMinutes(minutes);
     setShowCommitment(false);
     sessionStartTimeRef.current = currentTime;
+    realTimeStartRef.current = Date.now(); // Track real wall-clock time
 
     await startSession.mutateAsync({
       videoId: video.id,
@@ -218,11 +220,11 @@ export default function Watch() {
     });
   };
 
-  // Calculate watched minutes in current session
+  // Calculate watched minutes in current session based on REAL time spent
   const getWatchedMinutes = () => {
-    if (!committedMinutes) return 0;
-    const watchedSeconds = currentTime - sessionStartTimeRef.current;
-    return Math.max(0, Math.floor(watchedSeconds / 60));
+    if (!realTimeStartRef.current) return 0;
+    const realTimeSpentMs = Date.now() - realTimeStartRef.current;
+    return Math.max(0, Math.floor(realTimeSpentMs / 60000)); // Convert ms to minutes
   };
 
   // Handle back/exit button click
@@ -252,15 +254,17 @@ export default function Watch() {
     navigate('/');
   };
 
-  // Handle log and skip
-  const handleLogSkip = async (reason?: string) => {
+  // Handle log and skip - supports manual minutes for external watching
+  const handleLogSkip = async (reason?: string, manualMinutes?: number) => {
     if (!video || !user) return;
+
+    const completedMins = manualMinutes !== undefined ? manualMinutes : getWatchedMinutes();
 
     await supabase.from('skipped_sessions').insert({
       user_id: user.id,
       video_id: video.id,
       planned_minutes: committedMinutes,
-      completed_minutes: getWatchedMinutes(),
+      completed_minutes: completedMins,
       reason
     });
 

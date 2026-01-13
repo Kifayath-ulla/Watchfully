@@ -9,13 +9,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Play, LogOut, BookOpen } from 'lucide-react';
+import { Play, LogOut, BookOpen, Edit3 } from 'lucide-react';
 
 interface ExitFrictionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onContinue: () => void;
-  onLogSkip: (reason?: string) => void;
+  onLogSkip: (reason?: string, manualMinutes?: number) => void;
   onExit: () => void;
   committedMinutes?: number;
   watchedMinutes: number;
@@ -27,7 +27,8 @@ const SKIP_REASONS = [
   'Need a break',
   'Not what I expected',
   'Something urgent came up',
-  'Saving for later'
+  'Saving for later',
+  'Watched externally on YouTube'
 ];
 
 export function ExitFrictionModal({
@@ -42,9 +43,12 @@ export function ExitFrictionModal({
 }: ExitFrictionModalProps) {
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [disableFriction, setDisableFriction] = useState(false);
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [manualMinutes, setManualMinutes] = useState<number>(watchedMinutes);
 
   const handleLogSkip = () => {
-    onLogSkip(selectedReason || undefined);
+    const finalMinutes = showManualInput ? manualMinutes : undefined;
+    onLogSkip(selectedReason || undefined, finalMinutes);
     if (disableFriction && onDisableExitFriction) {
       onDisableExitFriction();
     }
@@ -54,6 +58,16 @@ export function ExitFrictionModal({
     onExit();
     if (disableFriction && onDisableExitFriction) {
       onDisableExitFriction();
+    }
+  };
+
+  const handleReasonSelect = (reason: string) => {
+    setSelectedReason(selectedReason === reason ? null : reason);
+    // Show manual input if they watched externally
+    if (reason === 'Watched externally on YouTube') {
+      setShowManualInput(true);
+    } else if (selectedReason === 'Watched externally on YouTube') {
+      setShowManualInput(false);
     }
   };
 
@@ -89,7 +103,7 @@ export function ExitFrictionModal({
             {SKIP_REASONS.map((reason) => (
               <button
                 key={reason}
-                onClick={() => setSelectedReason(selectedReason === reason ? null : reason)}
+                onClick={() => handleReasonSelect(reason)}
                 className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
                   selectedReason === reason
                     ? 'bg-primary/10 text-primary border border-primary/30'
@@ -100,6 +114,23 @@ export function ExitFrictionModal({
               </button>
             ))}
           </div>
+
+          {/* Manual time input for external watching */}
+          {showManualInput && (
+            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-md">
+              <Edit3 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span className="text-sm text-muted-foreground">Actual time watched:</span>
+              <input
+                type="number"
+                value={manualMinutes}
+                onChange={(e) => setManualMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+                min="0"
+                max={committedMinutes || 999}
+                className="w-16 h-7 px-2 text-center rounded border border-input bg-background text-foreground text-sm font-medium focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+              <span className="text-sm text-muted-foreground">min</span>
+            </div>
+          )}
 
           <div className="flex items-center space-x-2 pt-2">
             <Checkbox
@@ -113,28 +144,28 @@ export function ExitFrictionModal({
           </div>
         </div>
 
-        {/* Action buttons - perfectly centered in a grid */}
-        <div className="grid grid-cols-3 gap-3 w-full">
+        {/* Action buttons - perfectly centered */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 w-full pt-2">
           <Button 
             variant="default" 
             onClick={onContinue} 
-            className="gap-2"
+            className="gap-2 flex-1 sm:flex-initial"
           >
             <Play className="h-4 w-4" />
-            <span className="hidden sm:inline">Continue watching</span>
-            <span className="sm:hidden">Continue</span>
+            Continue
           </Button>
           <Button 
             variant="secondary" 
             onClick={handleLogSkip}
             disabled={!selectedReason}
+            className="flex-1 sm:flex-initial"
           >
             Log & exit
           </Button>
           <Button 
             variant="outline" 
             onClick={handleExit} 
-            className="gap-2"
+            className="gap-2 flex-1 sm:flex-initial"
           >
             <LogOut className="h-4 w-4" />
             Just exit
