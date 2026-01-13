@@ -15,6 +15,14 @@ const passwordSchema = z.string().min(6, "Password must be at least 6 characters
 
 type AuthMode = "login" | "signup" | "forgot";
 
+const motivationalQuotes = [
+  { text: "Watch with intention.", sub: "Finish what you start." },
+  { text: "Stop the scroll.", sub: "Start the progress." },
+  { text: "Every minute watched", sub: "is a minute earned." },
+  { text: "Eliminate procrastination.", sub: "Embrace focus." },
+  { text: "Your time is valuable.", sub: "Spend it wisely." },
+];
+
 export default function Auth() {
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
@@ -23,6 +31,8 @@ export default function Auth() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [quoteIndex, setQuoteIndex] = useState(0);
+  const [fadeIn, setFadeIn] = useState(true);
 
   const { user, signIn, signUp, resetPassword } = useAuth();
   const navigate = useNavigate();
@@ -33,6 +43,19 @@ export default function Auth() {
       navigate("/", { replace: true });
     }
   }, [user, navigate]);
+
+  // Rotate quotes with fade animation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFadeIn(false);
+      setTimeout(() => {
+        setQuoteIndex((prev) => (prev + 1) % motivationalQuotes.length);
+        setFadeIn(true);
+      }, 300);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -144,142 +167,165 @@ export default function Auth() {
     }
   };
 
+  const currentQuote = motivationalQuotes[quoteIndex];
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md space-y-8">
-        {/* Logo/Brand */}
-        <div className="text-center space-y-2">
-          <h1 className="font-serif text-3xl font-medium text-foreground tracking-tight">Watchfully!</h1>
-          <p className="text-muted-foreground text-sm">Watch with intention. Finish what you start.</p>
-        </div>
+    <div className="min-h-screen flex flex-col bg-background overflow-hidden relative">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/3 rounded-full blur-3xl" />
+      </div>
 
-        <Card className="border-border/50 shadow-sm">
-          <CardHeader className="space-y-1 pb-4">
-            {mode === "forgot" && (
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("login");
-                  setErrors({});
-                }}
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2 w-fit"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back to sign in
-              </button>
-            )}
-            <CardTitle className="text-xl font-medium">{getTitle()}</CardTitle>
-            <CardDescription>{getDescription()}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === "signup" && (
-                <div className="space-y-2">
-                  <Label htmlFor="displayName" className="text-sm font-medium">
-                    Display name
-                  </Label>
-                  <Input
-                    id="displayName"
-                    type="text"
-                    placeholder="Your name"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="bg-background"
-                  />
-                </div>
-              )}
+      <div className="flex-1 flex items-center justify-center px-4 relative z-10">
+        <div className="w-full max-w-md space-y-8">
+          {/* Animated Quote Section */}
+          <div className="text-center space-y-3">
+            <h1 className="font-serif text-4xl font-medium text-foreground tracking-tight bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text">
+              Watchfully
+            </h1>
+            <div
+              className={`transition-opacity duration-300 ${fadeIn ? 'opacity-100' : 'opacity-0'}`}
+            >
+              <p className="text-lg font-medium text-foreground">{currentQuote.text}</p>
+              <p className="text-muted-foreground">{currentQuote.sub}</p>
+            </div>
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (errors.email) setErrors({ ...errors, email: undefined });
-                  }}
-                  className={`bg-background ${errors.email ? "border-destructive" : ""}`}
-                />
-                {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-              </div>
-
-              {mode !== "forgot" && (
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium">
-                    Password
-                  </Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (errors.password) setErrors({ ...errors, password: undefined });
-                    }}
-                    className={`bg-background ${errors.password ? "border-destructive" : ""}`}
-                  />
-                  {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-                </div>
-              )}
-
-              {mode === "login" && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="rememberMe"
-                      checked={rememberMe}
-                      onCheckedChange={(checked) => setRememberMe(checked === true)}
-                    />
-                    <Label htmlFor="rememberMe" className="text-sm font-normal text-muted-foreground cursor-pointer">
-                      Remember me
-                    </Label>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMode("forgot");
-                      setErrors({});
-                    }}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-              )}
-
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting
-                  ? "Please wait..."
-                  : mode === "login"
-                    ? "Sign in"
-                    : mode === "signup"
-                      ? "Create account"
-                      : "Send reset link"}
-              </Button>
-            </form>
-
-            {mode !== "forgot" && (
-              <div className="text-center">
+          <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-card/95 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <CardHeader className="space-y-1 pb-4">
+              {mode === "forgot" && (
                 <button
                   type="button"
                   onClick={() => {
-                    setMode(mode === "login" ? "signup" : "login");
+                    setMode("login");
                     setErrors({});
                   }}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-250"
+                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2 w-fit"
                 >
-                  {mode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to sign in
                 </button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+              <CardTitle className="text-xl font-medium">{getTitle()}</CardTitle>
+              <CardDescription>{getDescription()}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {mode === "signup" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="displayName" className="text-sm font-medium">
+                      Display name
+                    </Label>
+                    <Input
+                      id="displayName"
+                      type="text"
+                      placeholder="Your name"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      className="bg-background"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errors.email) setErrors({ ...errors, email: undefined });
+                    }}
+                    className={`bg-background ${errors.email ? "border-destructive" : ""}`}
+                  />
+                  {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                </div>
+
+                {mode !== "forgot" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-sm font-medium">
+                      Password
+                    </Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (errors.password) setErrors({ ...errors, password: undefined });
+                      }}
+                      className={`bg-background ${errors.password ? "border-destructive" : ""}`}
+                    />
+                    {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+                  </div>
+                )}
+
+                {mode === "login" && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="rememberMe"
+                        checked={rememberMe}
+                        onCheckedChange={(checked) => setRememberMe(checked === true)}
+                      />
+                      <Label htmlFor="rememberMe" className="text-sm font-normal text-muted-foreground cursor-pointer">
+                        Remember me
+                      </Label>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode("forgot");
+                        setErrors({});
+                      }}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
+
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting
+                    ? "Please wait..."
+                    : mode === "login"
+                      ? "Sign in"
+                      : mode === "signup"
+                        ? "Create account"
+                        : "Send reset link"}
+                </Button>
+              </form>
+
+              {mode !== "forgot" && (
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode(mode === "login" ? "signup" : "login");
+                      setErrors({});
+                    }}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-250"
+                  >
+                    {mode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+                  </button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
+
+      {/* Footer */}
+      <footer className="py-4 text-center text-sm text-muted-foreground relative z-10">
+        Made with love kiffu❤️
+      </footer>
     </div>
   );
 }
