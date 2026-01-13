@@ -495,9 +495,9 @@ export default function Auth() {
       </div>
 
       {/* Footer */}
-      <footer className="py-4 text-center text-sm text-muted-foreground relative z-10 space-y-1">
-        <p className="text-xs opacity-75">Sign in to save your progress across devices</p>
-        <p>made with love by kiffu&lt;3</p>
+      <footer className="py-4 text-center relative z-10 space-y-1">
+        <p className="text-sm text-muted-foreground">Sign in to save your progress across devices</p>
+        <p className="text-xs text-muted-foreground opacity-75">made with love by kiffu&lt;3</p>
       </footer>
 
       {/* Gradient animation keyframes */}
