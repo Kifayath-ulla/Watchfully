@@ -65,6 +65,7 @@ export interface Profile {
   silent_mode: boolean;
   exit_friction_enabled: boolean;
   browser_notifications_enabled: boolean;
+  theme_preference: 'light' | 'dark' | null;
   created_at: string;
   updated_at: string;
 }

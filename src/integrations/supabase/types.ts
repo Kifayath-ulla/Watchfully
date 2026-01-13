@@ -95,6 +95,7 @@ export type Database = {
           exit_friction_enabled: boolean | null
           id: string
           silent_mode: boolean | null
+          theme_preference: string | null
           updated_at: string | null
         }
         Insert: {
@@ -105,6 +106,7 @@ export type Database = {
           exit_friction_enabled?: boolean | null
           id: string
           silent_mode?: boolean | null
+          theme_preference?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -115,6 +117,7 @@ export type Database = {
           exit_friction_enabled?: boolean | null
           id?: string
           silent_mode?: boolean | null
+          theme_preference?: string | null
           updated_at?: string | null
         }
         Relationships: []
