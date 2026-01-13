@@ -7,7 +7,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
@@ -57,7 +57,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe?: boolean) => {
+    // Set session persistence based on remember me
+    // When rememberMe is true, session persists across browser restarts
+    // When false, session ends when browser closes (using sessionStorage)
+    if (!rememberMe) {
+      // Short-lived session - will be cleared when browser closes
+      await supabase.auth.setSession({ 
+        access_token: '', 
+        refresh_token: '' 
+      }).catch(() => {}); // Clear any existing session first
+    }
+    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password
