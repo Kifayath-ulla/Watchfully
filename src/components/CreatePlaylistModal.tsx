@@ -15,7 +15,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Video, VideoIntent } from '@/types/video';
 import { usePlaylists } from '@/hooks/usePlaylists';
-import { useVideos } from '@/hooks/useVideos';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -141,8 +140,8 @@ export function CreatePlaylistModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <FolderPlus className="h-5 w-5" />
             Create Custom Playlist
@@ -152,7 +151,7 @@ export function CreatePlaylistModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="flex-1 overflow-y-auto space-y-4 py-4 min-h-0">
           {/* Title */}
           <div className="space-y-2">
             <Label htmlFor="playlist-title">Playlist Title</Label>
@@ -202,14 +201,14 @@ export function CreatePlaylistModal({
                 </Button>
               </div>
             </div>
-            <ScrollArea className="h-48 rounded-md border p-2">
-              {standaloneVideos.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No standalone videos available
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {standaloneVideos.map((video) => (
+            <ScrollArea className="h-48 rounded-md border">
+              <div className="p-2 space-y-2">
+                {standaloneVideos.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No standalone videos available
+                  </p>
+                ) : (
+                  standaloneVideos.map((video) => (
                     <div
                       key={video.id}
                       className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
@@ -226,23 +225,23 @@ export function CreatePlaylistModal({
                       <img
                         src={video.thumbnail_url || '/placeholder.svg'}
                         alt=""
-                        className="w-16 h-9 object-cover rounded"
+                        className="w-16 h-9 object-cover rounded flex-shrink-0"
                       />
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 overflow-hidden">
                         <p className="text-sm font-medium truncate">{video.title}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground truncate">
                           {video.channel_name} • {formatDuration(video.duration_seconds)}
                         </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                  ))
+                )}
+              </div>
             </ScrollArea>
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
