@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,75 @@ const passwordSchema = z.string().min(6, "Password must be at least 6 characters
 type AuthMode = "login" | "signup" | "forgot";
 
 const motivationalQuotes = [
-  { text: "Watch with intention.", sub: "Finish what you start." },
-  { text: "Stop the scroll.", sub: "Start the progress." },
-  { text: "Every minute watched", sub: "is a minute earned." },
-  { text: "Eliminate procrastination.", sub: "Embrace focus." },
-  { text: "Your time is valuable.", sub: "Spend it wisely." },
+  "Watch with intention. Finish what you start.",
+  "Stop the scroll. Start the progress.",
+  "Every minute counts. Make it intentional.",
+  "Eliminate procrastination. Embrace focus.",
+  "Your time is valuable. Spend it wisely.",
+  "Less scrolling, more learning.",
+  "Focus is your superpower.",
+  "One video at a time. No distractions.",
+  "Commit to finish. That's the difference.",
+  "Break the cycle. Watch mindfully.",
 ];
+
+// Animated doodle paths
+const doodlePaths = [
+  "M10,50 Q30,10 50,50 T90,50", // wave
+  "M0,0 L100,100", // diagonal
+  "M50,0 L50,100", // vertical
+  "M0,50 L100,50", // horizontal
+  "M20,20 Q50,80 80,20", // curve
+  "M10,90 Q50,10 90,90", // u-curve
+  "M0,30 Q50,90 100,30", // wave2
+  "M20,50 C30,10 70,90 80,50", // s-curve
+];
+
+interface Doodle {
+  id: number;
+  path: string;
+  startX: number;
+  startY: number;
+  targetX: number;
+  targetY: number;
+  rotation: number;
+  scale: number;
+  duration: number;
+  delay: number;
+  opacity: number;
+}
+
+function AnimatedDoodle({ doodle }: { doodle: Doodle }) {
+  return (
+    <svg
+      className="absolute pointer-events-none"
+      style={{
+        left: `${doodle.startX}%`,
+        top: `${doodle.startY}%`,
+        transform: `rotate(${doodle.rotation}deg) scale(${doodle.scale})`,
+        opacity: doodle.opacity,
+        animation: `doodleFloat ${doodle.duration}s ease-in-out ${doodle.delay}s infinite alternate`,
+      }}
+      width="100"
+      height="100"
+      viewBox="0 0 100 100"
+      fill="none"
+    >
+      <path
+        d={doodle.path}
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        className="text-primary/20"
+        style={{
+          strokeDasharray: 200,
+          strokeDashoffset: 200,
+          animation: `doodleDraw ${doodle.duration * 0.5}s ease-out ${doodle.delay}s forwards`,
+        }}
+      />
+    </svg>
+  );
+}
 
 export default function Auth() {
   const [mode, setMode] = useState<AuthMode>("login");
@@ -38,6 +101,23 @@ export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Generate random doodles
+  const doodles = useMemo<Doodle[]>(() => {
+    return Array.from({ length: 15 }, (_, i) => ({
+      id: i,
+      path: doodlePaths[Math.floor(Math.random() * doodlePaths.length)],
+      startX: Math.random() * 100,
+      startY: Math.random() * 100,
+      targetX: Math.random() * 100,
+      targetY: Math.random() * 100,
+      rotation: Math.random() * 360,
+      scale: 0.5 + Math.random() * 1.5,
+      duration: 8 + Math.random() * 12,
+      delay: Math.random() * 5,
+      opacity: 0.1 + Math.random() * 0.2,
+    }));
+  }, []);
+
   useEffect(() => {
     if (user) {
       navigate("/", { replace: true });
@@ -52,7 +132,7 @@ export default function Auth() {
         setQuoteIndex((prev) => (prev + 1) % motivationalQuotes.length);
         setFadeIn(true);
       }, 300);
-    }, 4000);
+    }, 3500);
 
     return () => clearInterval(interval);
   }, []);
@@ -171,25 +251,106 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background overflow-hidden relative">
-      {/* Animated background elements */}
+      {/* CSS for doodle animations */}
+      <style>{`
+        @keyframes doodleFloat {
+          0% {
+            transform: translate(0, 0) rotate(var(--rotation, 0deg)) scale(var(--scale, 1));
+          }
+          50% {
+            transform: translate(calc(var(--tx, 20px)), calc(var(--ty, 20px))) rotate(calc(var(--rotation, 0deg) + 15deg)) scale(calc(var(--scale, 1) * 1.1));
+          }
+          100% {
+            transform: translate(0, 0) rotate(var(--rotation, 0deg)) scale(var(--scale, 1));
+          }
+        }
+        @keyframes doodleDraw {
+          to {
+            stroke-dashoffset: 0;
+          }
+        }
+        @keyframes floatSlow {
+          0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }
+          25% { transform: translateY(-30px) translateX(15px) rotate(5deg); }
+          50% { transform: translateY(-10px) translateX(-10px) rotate(-3deg); }
+          75% { transform: translateY(-40px) translateX(20px) rotate(3deg); }
+        }
+        @keyframes dashToBorder {
+          0% { transform: translateX(0) translateY(0); opacity: 0.3; }
+          40% { transform: translateX(calc(50vw * var(--dir-x, 1))) translateY(calc(50vh * var(--dir-y, 1))); opacity: 0.6; }
+          60% { transform: translateX(calc(50vw * var(--dir-x, 1))) translateY(calc(50vh * var(--dir-y, 1))); opacity: 0.6; }
+          100% { transform: translateX(0) translateY(0); opacity: 0.3; }
+        }
+      `}</style>
+
+      {/* Animated background doodles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/3 rounded-full blur-3xl" />
+        {/* Soft glowing orbs */}
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/3 right-1/4 w-64 h-64 bg-accent/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        
+        {/* Animated doodle lines */}
+        {doodles.map((doodle) => (
+          <AnimatedDoodle key={doodle.id} doodle={doodle} />
+        ))}
+
+        {/* Floating text quotes in background */}
+        <div 
+          className="absolute top-[15%] left-[8%] text-primary/10 text-sm font-medium whitespace-nowrap"
+          style={{ animation: 'floatSlow 20s ease-in-out infinite' }}
+        >
+          Focus more
+        </div>
+        <div 
+          className="absolute top-[25%] right-[12%] text-primary/10 text-xs font-medium whitespace-nowrap"
+          style={{ animation: 'floatSlow 25s ease-in-out infinite', animationDelay: '-5s' }}
+        >
+          Scroll less
+        </div>
+        <div 
+          className="absolute bottom-[30%] left-[15%] text-primary/10 text-sm font-medium whitespace-nowrap"
+          style={{ animation: 'floatSlow 22s ease-in-out infinite', animationDelay: '-10s' }}
+        >
+          Learn intentionally
+        </div>
+        <div 
+          className="absolute top-[60%] right-[8%] text-primary/10 text-xs font-medium whitespace-nowrap"
+          style={{ animation: 'floatSlow 18s ease-in-out infinite', animationDelay: '-3s' }}
+        >
+          Finish what you start
+        </div>
+        <div 
+          className="absolute bottom-[20%] right-[20%] text-primary/10 text-sm font-medium whitespace-nowrap"
+          style={{ animation: 'floatSlow 24s ease-in-out infinite', animationDelay: '-8s' }}
+        >
+          Break the cycle
+        </div>
+        <div 
+          className="absolute top-[40%] left-[5%] text-primary/10 text-xs font-medium whitespace-nowrap"
+          style={{ animation: 'floatSlow 21s ease-in-out infinite', animationDelay: '-12s' }}
+        >
+          One video at a time
+        </div>
+        <div 
+          className="absolute bottom-[45%] right-[5%] text-primary/10 text-sm font-medium whitespace-nowrap"
+          style={{ animation: 'floatSlow 19s ease-in-out infinite', animationDelay: '-7s' }}
+        >
+          Mindful watching
+        </div>
       </div>
 
       <div className="flex-1 flex items-center justify-center px-4 relative z-10">
-        <div className="w-full max-w-md space-y-8">
-          {/* Animated Quote Section */}
-          <div className="text-center space-y-3">
-            <h1 className="font-serif text-4xl font-medium text-foreground tracking-tight bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text">
+        <div className="w-full max-w-md space-y-6">
+          {/* Brand and Animated Quote */}
+          <div className="text-center space-y-4">
+            <h1 className="font-serif text-5xl font-medium tracking-tight bg-gradient-to-r from-foreground via-primary to-foreground bg-[length:200%_100%] bg-clip-text text-transparent animate-[gradient_8s_ease_infinite]">
               Watchfully
             </h1>
             <div
-              className={`transition-opacity duration-300 ${fadeIn ? 'opacity-100' : 'opacity-0'}`}
+              className={`h-8 transition-all duration-300 ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
             >
-              <p className="text-lg font-medium text-foreground">{currentQuote.text}</p>
-              <p className="text-muted-foreground">{currentQuote.sub}</p>
+              <p className="text-base text-muted-foreground italic">"{currentQuote}"</p>
             </div>
           </div>
 
@@ -326,6 +487,14 @@ export default function Auth() {
       <footer className="py-4 text-center text-sm text-muted-foreground relative z-10">
         Made with love kiffu❤️
       </footer>
+
+      {/* Gradient animation keyframes */}
+      <style>{`
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+      `}</style>
     </div>
   );
 }

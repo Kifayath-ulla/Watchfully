@@ -44,10 +44,10 @@ export function ExitFrictionModal({
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [disableFriction, setDisableFriction] = useState(false);
   const [showManualInput, setShowManualInput] = useState(false);
-  const [manualMinutes, setManualMinutes] = useState<number>(watchedMinutes);
+  const [manualMinutes, setManualMinutes] = useState<string>(String(watchedMinutes));
 
   const handleLogSkip = () => {
-    const finalMinutes = showManualInput ? manualMinutes : undefined;
+    const finalMinutes = showManualInput ? parseInt(manualMinutes) || 0 : undefined;
     onLogSkip(selectedReason || undefined, finalMinutes);
     if (disableFriction && onDisableExitFriction) {
       onDisableExitFriction();
@@ -121,11 +121,22 @@ export function ExitFrictionModal({
               <Edit3 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <span className="text-sm text-muted-foreground">Actual time watched:</span>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 value={manualMinutes}
-                onChange={(e) => setManualMinutes(Math.max(0, parseInt(e.target.value) || 0))}
-                min="0"
-                max={committedMinutes || 999}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  // Allow empty string or digits only
+                  if (val === '' || /^\d+$/.test(val)) {
+                    setManualMinutes(val);
+                  }
+                }}
+                onBlur={() => {
+                  // Ensure valid number on blur
+                  if (manualMinutes === '') {
+                    setManualMinutes('0');
+                  }
+                }}
                 className="w-16 h-7 px-2 text-center rounded border border-input bg-background text-foreground text-sm font-medium focus:outline-none focus:ring-1 focus:ring-ring"
               />
               <span className="text-sm text-muted-foreground">min</span>

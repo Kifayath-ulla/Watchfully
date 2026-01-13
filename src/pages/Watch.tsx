@@ -260,6 +260,40 @@ export default function Watch() {
 
     const completedMins = manualMinutes !== undefined ? manualMinutes : getWatchedMinutes();
 
+    // If external watching with manual minutes, update video progress
+    if (reason === 'Watched externally on YouTube' && manualMinutes !== undefined && manualMinutes > 0) {
+      const additionalSeconds = manualMinutes * 60;
+      const newPosition = Math.min(
+        (video.current_position_seconds || 0) + additionalSeconds,
+        video.duration_seconds
+      );
+      
+      // Update video position
+      await supabase
+        .from('videos')
+        .update({
+          current_position_seconds: Math.floor(newPosition),
+          status: newPosition >= video.duration_seconds ? 'completed' : 'in_progress',
+          completed_at: newPosition >= video.duration_seconds ? new Date().toISOString() : null,
+        })
+        .eq('id', video.id)
+        .eq('user_id', user.id);
+
+      // Create a watch session to track the external watching time for daily stats
+      await supabase.from('watch_sessions').insert({
+        user_id: user.id,
+        video_id: video.id,
+        committed_minutes: manualMinutes,
+        actual_minutes: manualMinutes,
+        start_position_seconds: video.current_position_seconds || 0,
+        end_position_seconds: Math.floor(newPosition),
+        started_at: new Date(Date.now() - manualMinutes * 60000).toISOString(),
+        ended_at: new Date().toISOString(),
+        was_completed: newPosition >= video.duration_seconds,
+        exit_reason: 'external_youtube'
+      });
+    }
+
     await supabase.from('skipped_sessions').insert({
       user_id: user.id,
       video_id: video.id,
