@@ -93,20 +93,22 @@ export function WeeklyStreakDots({ dailyGoalMinutes = 45 }: WeeklyStreakDotsProp
 
   return (
     <TooltipProvider>
-      <div className="flex items-center gap-1.5">
-        <div className="flex items-center gap-0.5">
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {weekData.map((day) => (
             <Tooltip key={day.date}>
               <TooltipTrigger asChild>
-                <div
-                  className={`w-3 h-3 rounded-full transition-all ${
-                    day.achieved
-                      ? 'bg-primary shadow-sm'
-                      : day.minutes > 0
-                        ? 'bg-primary/30'
-                        : 'bg-muted'
-                  } ${day.isToday ? 'ring-1 ring-offset-1 ring-offset-background ring-primary/50' : ''}`}
-                />
+                <div className="flex flex-col items-center gap-0.5">
+                  <div
+                    className={`w-3.5 h-3.5 rounded-full transition-all ${
+                      day.achieved
+                        ? 'bg-primary shadow-sm'
+                        : day.minutes > 0
+                          ? 'bg-primary/30'
+                          : 'bg-muted'
+                    } ${day.isToday ? 'ring-1 ring-offset-1 ring-offset-background ring-primary/50' : ''}`}
+                  />
+                </div>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-xs">
                 <p className="font-medium">{day.day}</p>

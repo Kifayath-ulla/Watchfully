@@ -140,114 +140,138 @@ export function CreatePlaylistModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <FolderPlus className="h-5 w-5" />
-            Create Custom Playlist
+      <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-border">
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <FolderPlus className="h-5 w-5 text-primary" />
+            Create Playlist
           </DialogTitle>
-          <DialogDescription>
-            Group standalone videos into a playlist for organized watching.
+          <DialogDescription className="text-sm">
+            Group videos together for organized watching
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4 py-4 min-h-0">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="playlist-title">Playlist Title</Label>
+            <Label htmlFor="playlist-title" className="text-sm font-medium">Title</Label>
             <Input
               id="playlist-title"
-              placeholder="My Custom Playlist"
+              placeholder="e.g., JavaScript Fundamentals"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              className="h-10"
             />
           </div>
 
           {/* Intent */}
           <div className="space-y-2">
-            <Label>Intent</Label>
+            <Label className="text-sm font-medium">Intent</Label>
             <Select value={intent} onValueChange={(v) => setIntent(v as VideoIntent)}>
-              <SelectTrigger>
+              <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="learning">Learning</SelectItem>
-                <SelectItem value="career">Career</SelectItem>
-                <SelectItem value="curiosity">Curiosity</SelectItem>
-                <SelectItem value="leisure">Leisure</SelectItem>
-                <SelectItem value="custom">Custom</SelectItem>
+                <SelectItem value="learning">🎓 Learning</SelectItem>
+                <SelectItem value="career">💼 Career</SelectItem>
+                <SelectItem value="curiosity">🔍 Curiosity</SelectItem>
+                <SelectItem value="leisure">🎮 Leisure</SelectItem>
+                <SelectItem value="custom">✏️ Custom</SelectItem>
               </SelectContent>
             </Select>
             {intent === 'custom' && (
               <Input
-                placeholder="Custom intent..."
+                placeholder="Enter custom intent..."
                 value={customIntent}
                 onChange={(e) => setCustomIntent(e.target.value)}
-                className="mt-2"
+                className="h-10"
               />
             )}
           </div>
 
           {/* Video Selection */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>Select Videos ({selectedVideos.size} selected)</Label>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={selectAll} className="h-7 text-xs">
-                  Select All
+              <Label className="text-sm font-medium">
+                Videos <span className="text-muted-foreground font-normal">({selectedVideos.size} selected)</span>
+              </Label>
+              <div className="flex gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={selectAll} 
+                  className="h-7 px-2 text-xs hover:bg-primary/10"
+                >
+                  Select all
                 </Button>
-                <Button variant="ghost" size="sm" onClick={clearSelection} className="h-7 text-xs">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={clearSelection} 
+                  className="h-7 px-2 text-xs hover:bg-destructive/10"
+                  disabled={selectedVideos.size === 0}
+                >
                   Clear
                 </Button>
               </div>
             </div>
-            <ScrollArea className="h-48 rounded-md border">
-              <div className="p-2 space-y-2">
-                {standaloneVideos.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No standalone videos available
-                  </p>
-                ) : (
-                  standaloneVideos.map((video) => (
-                    <div
-                      key={video.id}
-                      className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
-                        selectedVideos.has(video.id)
-                          ? 'bg-primary/10 border border-primary/20'
-                          : 'hover:bg-muted/50'
-                      }`}
-                      onClick={() => toggleVideo(video.id)}
-                    >
-                      <Checkbox
-                        checked={selectedVideos.has(video.id)}
-                        onCheckedChange={() => toggleVideo(video.id)}
-                      />
-                      <img
-                        src={video.thumbnail_url || '/placeholder.svg'}
-                        alt=""
-                        className="w-16 h-9 object-cover rounded flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0 overflow-hidden">
-                        <p className="text-sm font-medium truncate">{video.title}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {video.channel_name} • {formatDuration(video.duration_seconds)}
-                        </p>
+            
+            <div className="border border-border rounded-lg overflow-hidden">
+              <ScrollArea className="h-52">
+                <div className="divide-y divide-border">
+                  {standaloneVideos.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8 px-4">
+                      No videos available to add
+                    </p>
+                  ) : (
+                    standaloneVideos.map((video) => (
+                      <div
+                        key={video.id}
+                        className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${
+                          selectedVideos.has(video.id)
+                            ? 'bg-primary/5'
+                            : 'hover:bg-muted/50'
+                        }`}
+                        onClick={() => toggleVideo(video.id)}
+                      >
+                        <Checkbox
+                          checked={selectedVideos.has(video.id)}
+                          onCheckedChange={() => toggleVideo(video.id)}
+                          className="flex-shrink-0"
+                        />
+                        <img
+                          src={video.thumbnail_url || '/placeholder.svg'}
+                          alt=""
+                          className="w-14 h-8 object-cover rounded flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate leading-tight">{video.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {video.channel_name} · {formatDuration(video.duration_seconds)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
           </div>
         </div>
 
-        <DialogFooter className="flex-shrink-0 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting || selectedVideos.size === 0}>
-            {isSubmitting ? 'Creating...' : `Create Playlist (${selectedVideos.size})`}
-          </Button>
+        <DialogFooter className="flex-shrink-0 px-6 py-4 border-t border-border bg-muted/30">
+          <div className="flex gap-2 w-full sm:w-auto sm:justify-end">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmit} 
+              disabled={isSubmitting || selectedVideos.size === 0}
+              className="flex-1 sm:flex-none"
+            >
+              {isSubmitting ? 'Creating...' : `Create (${selectedVideos.size})`}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

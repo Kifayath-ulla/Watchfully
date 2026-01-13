@@ -3,14 +3,31 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, Target } from 'lucide-react';
+import { Bell, Target, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+const NOTIFICATION_DISMISSED_KEY = 'watchfully-notification-dismissed';
 
 export function GoalNotifications() {
   const { user } = useAuth();
   const { profile, updateProfile } = useProfile();
   const { toast } = useToast();
   const [dismissed, setDismissed] = useState(false);
+  const [permanentlyDismissed, setPermanentlyDismissed] = useState(false);
+
+  // Check if permanently dismissed on mount
+  useEffect(() => {
+    if (user) {
+      const dismissedUntil = sessionStorage.getItem(`${NOTIFICATION_DISMISSED_KEY}-${user.id}`);
+      if (dismissedUntil === 'session') {
+        setDismissed(true);
+      }
+      const permanent = localStorage.getItem(`${NOTIFICATION_DISMISSED_KEY}-permanent-${user.id}`);
+      if (permanent === 'true') {
+        setPermanentlyDismissed(true);
+      }
+    }
+  }, [user]);
 
   const checkGoalProgress = useCallback(async () => {
     if (!user || profile?.silent_mode || !profile?.browser_notifications_enabled) return;
@@ -89,6 +106,17 @@ export function GoalNotifications() {
   };
 
   const handleDismiss = () => {
+    if (user) {
+      sessionStorage.setItem(`${NOTIFICATION_DISMISSED_KEY}-${user.id}`, 'session');
+    }
+    setDismissed(true);
+  };
+
+  const handleDontShowAgain = () => {
+    if (user) {
+      localStorage.setItem(`${NOTIFICATION_DISMISSED_KEY}-permanent-${user.id}`, 'true');
+    }
+    setPermanentlyDismissed(true);
     setDismissed(true);
   };
 
@@ -112,13 +140,21 @@ export function GoalNotifications() {
     !profile.silent_mode && 
     'Notification' in window && 
     Notification.permission === 'default' &&
-    !dismissed
+    !dismissed &&
+    !permanentlyDismissed
   ) {
     return (
       <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4">
-        <div className="bg-card border border-border rounded-lg shadow-lg p-4 max-w-sm">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-primary/10 rounded-full">
+        <div className="bg-card border border-border rounded-lg shadow-lg p-4 max-w-sm relative">
+          <button
+            onClick={handleDismiss}
+            className="absolute top-2 right-2 p-1 rounded-full hover:bg-muted transition-colors"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4 text-muted-foreground" />
+          </button>
+          <div className="flex items-start gap-3 pr-6">
+            <div className="p-2 bg-primary/10 rounded-full flex-shrink-0">
               <Bell className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1">
@@ -126,17 +162,25 @@ export function GoalNotifications() {
               <p className="text-sm text-muted-foreground mb-3">
                 Get reminded when you're falling behind on your daily watching goals.
               </p>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={requestNotificationPermission}>
-                  Enable notifications
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  onClick={handleDismiss}
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={requestNotificationPermission}>
+                    Enable notifications
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={handleDismiss}
+                  >
+                    Not now
+                  </Button>
+                </div>
+                <button
+                  onClick={handleDontShowAgain}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors text-left"
                 >
-                  Not now
-                </Button>
+                  Don't show this again
+                </button>
               </div>
             </div>
           </div>

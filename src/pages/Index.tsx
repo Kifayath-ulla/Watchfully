@@ -618,7 +618,8 @@ export default function Index() {
       </AlertDialog>
 
       {/* Footer */}
-      <footer className="py-6 text-center border-t border-border/50 mt-8">
+      <footer className="py-4 text-center border-t border-border/50 mt-8 space-y-1">
+        <p className="text-sm text-muted-foreground">Sign in to save your progress across devices</p>
         <p className="text-xs text-muted-foreground opacity-75">made with love by kiffu&lt;3</p>
       </footer>
     </div>
