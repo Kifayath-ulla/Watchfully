@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Trash2, PlayCircle, GripVertical } from 'lucide-react';
 import { Video } from '@/types/video';
 import { formatDuration, calculateProgress } from '@/lib/youtube';
+import { VideoPreviewHover } from '@/components/VideoPreviewHover';
 
 interface SortableVideoCardProps {
   video: Video;
@@ -59,7 +60,7 @@ export function SortableVideoCard({
     onToggleSelect?.(video.id);
   };
 
-  return (
+  const cardContent = (
     <Card
       ref={setNodeRef}
       style={style}
@@ -155,5 +156,16 @@ export function SortableVideoCard({
         </div>
       </CardContent>
     </Card>
+  );
+
+  // Only wrap with hover preview when not in selection mode
+  if (selectionMode) {
+    return cardContent;
+  }
+
+  return (
+    <VideoPreviewHover video={video}>
+      {cardContent}
+    </VideoPreviewHover>
   );
 }

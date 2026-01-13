@@ -1,11 +1,8 @@
 import { useState } from 'react';
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
@@ -64,8 +61,8 @@ export function ExitFrictionModal({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-md">
-        <AlertDialogHeader>
+      <AlertDialogContent className="max-w-md p-6">
+        <AlertDialogHeader className="text-left">
           <AlertDialogTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-primary" />
             Leaving so soon?
@@ -116,26 +113,33 @@ export function ExitFrictionModal({
           </div>
         </div>
 
-        <AlertDialogFooter className="flex-row justify-center gap-2 sm:justify-center">
-          <Button variant="default" onClick={onContinue} className="gap-2 flex-1 sm:flex-none">
+        {/* Action buttons - perfectly centered in a grid */}
+        <div className="grid grid-cols-3 gap-3 w-full">
+          <Button 
+            variant="default" 
+            onClick={onContinue} 
+            className="gap-2"
+          >
             <Play className="h-4 w-4" />
-            Continue watching
+            <span className="hidden sm:inline">Continue watching</span>
+            <span className="sm:hidden">Continue</span>
           </Button>
           <Button 
             variant="secondary" 
             onClick={handleLogSkip}
             disabled={!selectedReason}
-            className="flex-1 sm:flex-none"
           >
             Log & exit
           </Button>
-          <AlertDialogCancel asChild>
-            <Button variant="outline" onClick={handleExit} className="gap-2 flex-1 sm:flex-none">
-              <LogOut className="h-4 w-4" />
-              Just exit
-            </Button>
-          </AlertDialogCancel>
-        </AlertDialogFooter>
+          <Button 
+            variant="outline" 
+            onClick={handleExit} 
+            className="gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Just exit
+          </Button>
+        </div>
       </AlertDialogContent>
     </AlertDialog>
   );
