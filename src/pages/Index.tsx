@@ -1,11 +1,11 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVideos } from "@/hooks/useVideos";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
-import { Play, Plus, LogOut, Settings, CheckSquare } from "lucide-react";
+import { Play, Plus, LogOut, Settings, CheckSquare, FolderPlus, HelpCircle } from "lucide-react";
 import { AddVideoModal } from "@/components/AddVideoModal";
 import { Video, VideoStatus, VideoIntent } from "@/types/video";
 import { ProgressDashboard } from "@/components/ProgressDashboard";
@@ -15,10 +15,15 @@ import { PlaylistGroup } from "@/components/PlaylistGroup";
 import { GoalNotifications } from "@/components/GoalNotifications";
 import { QueueFilters } from "@/components/QueueFilters";
 import { BulkActionBar } from "@/components/BulkActionBar";
+import { WeeklyStreakDots } from "@/components/WeeklyStreakDots";
+import { QueueSearch } from "@/components/QueueSearch";
+import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
+import { OnboardingTutorial } from "@/components/OnboardingTutorial";
 import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +50,8 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
+const TUTORIAL_STORAGE_KEY = 'watchfully-tutorial-completed';
+
 export default function Index() {
   const { user, loading, signOut } = useAuth();
   const { videos, isLoading: videosLoading, deleteVideo, reorderVideos, bulkMarkComplete, bulkDelete, bulkUpdateIntent, undoBulkComplete, undoBulkDelete, undoBulkIntent } = useVideos();
@@ -53,11 +60,13 @@ export default function Index() {
   const { profile, toggleSilentMode, toggleExitFriction } = useProfile();
   const navigate = useNavigate();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
   
   // Filter state
   const [statusFilter, setStatusFilter] = useState<VideoStatus | 'all'>('all');
   const [intentFilter, setIntentFilter] = useState<VideoIntent | 'all'>('all');
   const [videoFilter, setVideoFilter] = useState<string | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Selection state
   const [selectionMode, setSelectionMode] = useState(false);
@@ -89,6 +98,16 @@ export default function Index() {
     if (playlistVids.some(v => v.status === 'in_progress' || v.status === 'completed')) return 'in_progress';
     return 'not_started';
   };
+
+  // Search matching helper
+  const matchesSearch = useCallback((video: Video) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      video.title.toLowerCase().includes(query) ||
+      (video.channel_name?.toLowerCase().includes(query) ?? false)
+    );
+  }, [searchQuery]);
 
   // Group videos by playlist
   const { playlistVideos, standaloneVideos, filteredPlaylists, filteredStandaloneVideos } = useMemo(() => {
@@ -125,6 +144,9 @@ export default function Index() {
       }
     }
 
+    // Apply search filter
+    filteredStandalone = filteredStandalone.filter(matchesSearch);
+
     // Apply status and intent filters
     filteredStandalone = filteredStandalone.filter(video => {
       const statusMatch = statusFilter === 'all' || video.status === statusFilter;
@@ -136,6 +158,11 @@ export default function Index() {
     const filteredPlaylistIds = filteredPlaylistList.filter(playlist => {
       const playlistVids = playlistMap.get(playlist.id) || [];
       if (playlistVids.length === 0) return false;
+      
+      // Check if any video in playlist matches search
+      if (searchQuery.trim() && !playlistVids.some(matchesSearch) && !playlist.title.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
       
       const playlistStatus = getPlaylistStatus(playlistVids);
       const statusMatch = statusFilter === 'all' || playlistStatus === statusFilter;
@@ -149,7 +176,7 @@ export default function Index() {
       filteredPlaylists: playlists.filter(p => filteredPlaylistIds.includes(p.id)),
       filteredStandaloneVideos: filteredStandalone,
     };
-  }, [videos, playlists, statusFilter, intentFilter, videoFilter]);
+  }, [videos, playlists, statusFilter, intentFilter, videoFilter, searchQuery, matchesSearch]);
 
   // Selection handlers
   const toggleSelection = (videoId: string) => {
@@ -236,6 +263,14 @@ export default function Index() {
   const playlistToDeleteData = playlists.find(p => p.id === playlistToDelete);
   const playlistVideoCount = playlistToDelete ? (playlistVideos.get(playlistToDelete)?.length || 0) : 0;
 
+  // Reopen tutorial
+  const reopenTutorial = () => {
+    if (user) {
+      localStorage.removeItem(`${TUTORIAL_STORAGE_KEY}-${user.id}`);
+      window.location.reload();
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -290,22 +325,39 @@ export default function Index() {
     setStatusFilter('all');
     setIntentFilter('all');
     setVideoFilter('all');
+    setSearchQuery('');
   };
 
-  const hasActiveFilters = statusFilter !== 'all' || intentFilter !== 'all' || videoFilter !== 'all';
+  const hasActiveFilters = statusFilter !== 'all' || intentFilter !== 'all' || videoFilter !== 'all' || searchQuery.trim() !== '';
   const displayedCount = filteredStandaloneVideos.length + filteredPlaylists.reduce((acc, p) => acc + (playlistVideos.get(p.id)?.length || 0), 0);
   const totalCount = videos.length;
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Onboarding Tutorial */}
+      <OnboardingTutorial />
+      
       {/* Goal Notifications */}
       <GoalNotifications />
 
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="font-serif text-xl font-medium text-foreground">Watchfully</h1>
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h1 className="font-serif text-xl font-medium text-foreground">Watchfully</h1>
+            <WeeklyStreakDots dailyGoalMinutes={profile?.daily_goal_minutes || 45} />
+          </div>
           <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={reopenTutorial}>
+                    <HelpCircle className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View tutorial</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <ThemeToggle />
 
             {/* Settings Sheet */}
@@ -356,12 +408,12 @@ export default function Index() {
       </header>
 
       {/* Hero */}
-      <section className="py-16 md:py-24">
+      <section className="py-12 md:py-16">
         <div className="container mx-auto px-4 text-center max-w-2xl">
-          <h2 className="font-serif text-4xl md:text-5xl font-medium text-foreground tracking-tight mb-4">
+          <h2 className="font-serif text-3xl md:text-4xl font-medium text-foreground tracking-tight mb-3">
             Watch with intention.
           </h2>
-          <p className="text-lg text-muted-foreground mb-8">
+          <p className="text-base text-muted-foreground mb-6">
             Track your progress, set a time commitment, honor your intention.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -371,38 +423,71 @@ export default function Index() {
             </Button>
             <Button size="lg" variant="outline" className="gap-2" onClick={() => setShowAddModal(true)}>
               <Plus className="h-4 w-4" />
-              Add a Video/Playlist
+              Add Video/Playlist
             </Button>
           </div>
         </div>
       </section>
 
       {/* Progress Dashboard */}
-      <section className="py-8">
+      <section className="py-4">
         <div className="container mx-auto px-4 max-w-4xl">
-          <h3 className="text-lg font-medium text-foreground mb-4">Your Progress</h3>
+          <h3 className="text-lg font-medium text-foreground mb-3">Your Progress</h3>
           <ProgressDashboard dailyGoalMinutes={profile?.daily_goal_minutes || 45} />
         </div>
       </section>
 
       {/* Video Queue or Empty State */}
-      <section className="py-12">
+      <section className="py-6">
         <div className="container mx-auto px-4 max-w-4xl">
           {videosLoading ? (
             <div className="text-center py-16 text-muted-foreground">Loading your videos...</div>
           ) : hasVideos ? (
             <div className="space-y-4">
               {/* Queue Header with Filters */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-medium text-foreground">Your Queue</h3>
-                  {hasActiveFilters && (
-                    <span className="text-sm text-muted-foreground">
-                      Showing {displayedCount} of {totalCount}
-                    </span>
-                  )}
+              <div className="flex flex-col gap-3 mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-medium text-foreground">Your Queue</h3>
+                    {hasActiveFilters && (
+                      <span className="text-sm text-muted-foreground">
+                        {displayedCount} of {totalCount}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {standaloneVideos.length >= 2 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowCreatePlaylist(true)}
+                        className="h-8"
+                      >
+                        <FolderPlus className="h-4 w-4 mr-1" />
+                        Create Playlist
+                      </Button>
+                    )}
+                    <Button
+                      variant={selectionMode ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setSelectionMode(!selectionMode);
+                        if (selectionMode) clearSelection();
+                      }}
+                      className="h-8"
+                    >
+                      <CheckSquare className="h-4 w-4 mr-1" />
+                      Select
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
+                  <QueueSearch
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    resultCount={displayedCount}
+                    totalCount={totalCount}
+                  />
                   <QueueFilters
                     statusFilter={statusFilter}
                     intentFilter={intentFilter}
@@ -414,18 +499,6 @@ export default function Index() {
                     videos={videos}
                     playlists={playlists}
                   />
-                  <Button
-                    variant={selectionMode ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      setSelectionMode(!selectionMode);
-                      if (selectionMode) clearSelection();
-                    }}
-                    className="h-8"
-                  >
-                    <CheckSquare className="h-4 w-4 mr-1" />
-                    Select
-                  </Button>
                 </div>
               </div>
 
@@ -448,7 +521,7 @@ export default function Index() {
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
               >
-                <div className="grid gap-4">
+                <div className="grid gap-3">
                   {/* Render playlists as grouped items */}
                   {filteredPlaylists.map((playlist) => {
                     const playlistVideoList = playlistVideos.get(playlist.id);
@@ -502,7 +575,7 @@ export default function Index() {
               </DndContext>
             </div>
           ) : (
-            <div className="text-center py-16 px-6 rounded-lg border border-dashed border-border bg-card/30">
+            <div className="text-center py-12 px-6 rounded-lg border border-dashed border-border bg-card/30">
               <p className="text-muted-foreground mb-4">
                 Your queue is empty. Add a YouTube video or playlist to get started.
               </p>
@@ -515,7 +588,18 @@ export default function Index() {
         </div>
       </section>
 
+      {/* Footer */}
+      <footer className="py-8 text-center text-sm text-muted-foreground">
+        Made with love kiffu❤️
+      </footer>
+
       <AddVideoModal open={showAddModal} onOpenChange={setShowAddModal} />
+      
+      <CreatePlaylistModal
+        open={showCreatePlaylist}
+        onOpenChange={setShowCreatePlaylist}
+        standaloneVideos={standaloneVideos}
+      />
 
       {/* Playlist Delete Confirmation */}
       <AlertDialog open={!!playlistToDelete} onOpenChange={() => setPlaylistToDelete(null)}>
