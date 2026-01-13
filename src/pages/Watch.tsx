@@ -2,19 +2,22 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Video } from '@/types/video';
+import { Video, Playlist } from '@/types/video';
 import { YouTubePlayer, useYouTubePlayer } from '@/components/YouTubePlayer';
 import { useWatchSession } from '@/hooks/useWatchSession';
 import { useProfile } from '@/hooks/useProfile';
+import { useVideos } from '@/hooks/useVideos';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Check, Clock } from 'lucide-react';
+import { ArrowLeft, Check, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDuration, calculateProgress } from '@/lib/youtube';
 import { useToast } from '@/hooks/use-toast';
 import { ExitFrictionModal } from '@/components/ExitFrictionModal';
 import { PlaybackControls } from '@/components/PlaybackControls';
+import { PlaylistSidebar } from '@/components/PlaylistSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { cn } from '@/lib/utils';
 
 export default function Watch() {
   const { videoId } = useParams<{ videoId: string }>();
@@ -22,8 +25,11 @@ export default function Watch() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const { profile, toggleExitFriction } = useProfile();
+  const { videos: allVideos, markComplete, deleteVideo } = useVideos();
   
   const [video, setVideo] = useState<Video | null>(null);
+  const [playlist, setPlaylist] = useState<Playlist | null>(null);
+  const [playlistVideos, setPlaylistVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -31,6 +37,7 @@ export default function Watch() {
   const [committedMinutes, setCommittedMinutes] = useState<number | null>(null);
   const [showCommitment, setShowCommitment] = useState(true);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   
   const { setPlayer, play, pause, seekRelative, setPlaybackRate, playbackRate } = useYouTubePlayer();
   const { startSession, endSession, updateProgress, isSessionActive } = useWatchSession();
@@ -39,40 +46,64 @@ export default function Watch() {
   const saveIntervalRef = useRef<number>(5);
   const sessionStartTimeRef = useRef<number>(0);
 
-  // Fetch video data
+  // Fetch video and playlist data
   useEffect(() => {
-    async function fetchVideo() {
+    async function fetchVideoData() {
       if (!user || !videoId) return;
 
-      const { data, error } = await supabase
+      const { data: videoData, error: videoError } = await supabase
         .from('videos')
         .select('*')
         .eq('id', videoId)
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (error) {
-        toast({ title: 'Error loading video', variant: 'destructive' });
-        navigate('/');
-        return;
-      }
-
-      if (!data) {
+      if (videoError || !videoData) {
         toast({ title: 'Video not found', variant: 'destructive' });
         navigate('/');
         return;
       }
 
-      setVideo(data as Video);
-      setCurrentTime(data.current_position_seconds || 0);
-      setDuration(data.duration_seconds || 0);
+      setVideo(videoData as Video);
+      setCurrentTime(videoData.current_position_seconds || 0);
+      setDuration(videoData.duration_seconds || 0);
+
+      // If video is part of a playlist, fetch playlist and related videos
+      if (videoData.playlist_id) {
+        const [playlistResult, videosResult] = await Promise.all([
+          supabase
+            .from('playlists')
+            .select('*')
+            .eq('id', videoData.playlist_id)
+            .eq('user_id', user.id)
+            .maybeSingle(),
+          supabase
+            .from('videos')
+            .select('*')
+            .eq('playlist_id', videoData.playlist_id)
+            .eq('user_id', user.id)
+            .order('playlist_order', { ascending: true })
+        ]);
+
+        if (playlistResult.data) {
+          setPlaylist(playlistResult.data as Playlist);
+        }
+        if (videosResult.data) {
+          setPlaylistVideos(videosResult.data as Video[]);
+        }
+      } else {
+        // Show all non-playlist videos as the queue
+        const standaloneVideos = allVideos.filter(v => !v.playlist_id);
+        setPlaylistVideos(standaloneVideos);
+      }
+
       setLoading(false);
     }
 
     if (!authLoading && user) {
-      fetchVideo();
+      fetchVideoData();
     }
-  }, [user, videoId, authLoading, navigate, toast]);
+  }, [user, videoId, authLoading, navigate, toast, allVideos]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -112,7 +143,16 @@ export default function Watch() {
     }
 
     toast({ title: 'Video completed!', description: 'Great job finishing this video.' });
-  }, [video, duration, updateProgress, endSession, isSessionActive, toast]);
+
+    // Auto-play next video if in playlist
+    if (playlistVideos.length > 1) {
+      const currentIndex = playlistVideos.findIndex(v => v.id === video.id);
+      const nextVideo = playlistVideos[currentIndex + 1];
+      if (nextVideo && nextVideo.status !== 'completed') {
+        navigate(`/watch/${nextVideo.id}`);
+      }
+    }
+  }, [video, duration, updateProgress, endSession, isSessionActive, toast, playlistVideos, navigate]);
 
   // Start watching with commitment
   const handleStartWatching = async (minutes: number) => {
@@ -138,7 +178,6 @@ export default function Watch() {
 
   // Handle back/exit button click
   const handleExitClick = () => {
-    // Check if exit friction is enabled and session is active
     if (profile?.exit_friction_enabled && isSessionActive && committedMinutes) {
       const watchedMinutes = getWatchedMinutes();
       if (watchedMinutes < committedMinutes) {
@@ -147,7 +186,6 @@ export default function Watch() {
         return;
       }
     }
-    
     handleExit();
   };
 
@@ -169,7 +207,6 @@ export default function Watch() {
   const handleLogSkip = async (reason?: string) => {
     if (!video || !user) return;
 
-    // Log the skipped session
     await supabase.from('skipped_sessions').insert({
       user_id: user.id,
       video_id: video.id,
@@ -193,8 +230,27 @@ export default function Watch() {
     toast({ title: 'Exit friction disabled', description: 'You can re-enable it in settings.' });
   };
 
-  // Mark as complete manually
-  const handleMarkComplete = async () => {
+  // Mark video as complete from sidebar
+  const handleMarkComplete = (id: string) => {
+    markComplete.mutate(id);
+  };
+
+  // Delete video from sidebar
+  const handleDeleteVideo = (id: string) => {
+    if (id === videoId) {
+      // If deleting current video, navigate away
+      const otherVideos = playlistVideos.filter(v => v.id !== id);
+      if (otherVideos.length > 0) {
+        navigate(`/watch/${otherVideos[0].id}`);
+      } else {
+        navigate('/');
+      }
+    }
+    deleteVideo.mutate(id);
+  };
+
+  // Mark current as complete manually
+  const handleMarkCurrentComplete = async () => {
     if (!video) return;
     
     await updateProgress(video.id, duration, 'completed');
@@ -207,12 +263,35 @@ export default function Watch() {
     }
 
     toast({ title: 'Marked as complete!' });
-    navigate('/');
+    
+    // Auto-navigate to next if available
+    const currentIndex = playlistVideos.findIndex(v => v.id === video.id);
+    const nextVideo = playlistVideos[currentIndex + 1];
+    if (nextVideo) {
+      navigate(`/watch/${nextVideo.id}`);
+    } else {
+      navigate('/');
+    }
   };
 
   // Playback controls
   const handleSkipBack = (seconds: number) => seekRelative(-seconds);
   const handleSkipForward = (seconds: number) => seekRelative(seconds);
+
+  // Navigation between playlist videos
+  const navigateToPreviousVideo = () => {
+    const currentIndex = playlistVideos.findIndex(v => v.id === video?.id);
+    if (currentIndex > 0) {
+      navigate(`/watch/${playlistVideos[currentIndex - 1].id}`);
+    }
+  };
+
+  const navigateToNextVideo = () => {
+    const currentIndex = playlistVideos.findIndex(v => v.id === video?.id);
+    if (currentIndex < playlistVideos.length - 1) {
+      navigate(`/watch/${playlistVideos[currentIndex + 1].id}`);
+    }
+  };
 
   if (loading || authLoading) {
     return (
@@ -226,151 +305,212 @@ export default function Watch() {
 
   const progress = calculateProgress(currentTime, duration);
   const remainingSeconds = Math.max(0, duration - currentTime);
+  const currentIndex = playlistVideos.findIndex(v => v.id === video.id);
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex < playlistVideos.length - 1;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={handleExitClick}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to queue
-          </Button>
+      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40 flex-shrink-0">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={handleExitClick}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </Button>
+          </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             {committedMinutes && (
-              <Badge variant="secondary" className="gap-1">
+              <Badge variant="secondary" className="gap-1 hidden sm:flex">
                 <Clock className="h-3 w-3" />
                 {committedMinutes}m committed
               </Badge>
             )}
-            <Button variant="outline" size="sm" onClick={handleMarkComplete}>
+            <Button variant="outline" size="sm" onClick={handleMarkCurrentComplete}>
               <Check className="h-4 w-4 mr-2" />
-              Mark complete
+              <span className="hidden sm:inline">Mark complete</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 max-w-5xl">
-        {/* Commitment Selection */}
-        {showCommitment && (
-          <div className="mb-6 p-6 rounded-lg border border-border bg-card">
-            <h3 className="text-lg font-medium text-foreground mb-2">
-              How much time do you have?
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Enter your time commitment in minutes to watch intentionally.
-            </p>
-            <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const minutes = parseInt(formData.get('minutes') as string, 10);
-                if (minutes > 0 && minutes <= 180) {
-                  handleStartWatching(minutes);
-                }
-              }}
-              className="flex items-center gap-3"
-            >
-              <div className="relative flex-1 max-w-xs">
-                <input
-                  type="number"
-                  name="minutes"
-                  min="1"
-                  max="180"
-                  defaultValue="30"
-                  placeholder="Enter minutes..."
-                  className="w-full h-10 px-4 pr-12 rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  min
-                </span>
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar */}
+        <div 
+          className={cn(
+            "w-80 flex-shrink-0 transition-all duration-300 overflow-hidden",
+            sidebarOpen ? "translate-x-0" : "-translate-x-full w-0 lg:w-0"
+          )}
+        >
+          <PlaylistSidebar
+            currentVideoId={videoId || ''}
+            videos={playlistVideos}
+            playlist={playlist}
+            onMarkComplete={handleMarkComplete}
+            onDeleteVideo={handleDeleteVideo}
+          />
+        </div>
+
+        {/* Main content */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-5xl mx-auto p-4 lg:p-6 space-y-4">
+            {/* Commitment Selection */}
+            {showCommitment && (
+              <div className="p-4 lg:p-6 rounded-lg border border-border bg-card">
+                <h3 className="text-lg font-medium text-foreground mb-2">
+                  How much time do you have?
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Enter your time commitment in minutes to watch intentionally.
+                </p>
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const minutes = parseInt(formData.get('minutes') as string, 10);
+                    if (minutes > 0 && minutes <= 180) {
+                      handleStartWatching(minutes);
+                    }
+                  }}
+                  className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
+                >
+                  <div className="relative flex-1 max-w-xs">
+                    <input
+                      type="number"
+                      name="minutes"
+                      min="1"
+                      max="180"
+                      defaultValue="30"
+                      placeholder="Enter minutes..."
+                      className="w-full h-10 px-4 pr-12 rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      min
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="submit" size="default">
+                      Start watching
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowCommitment(false)}
+                    >
+                      Skip
+                    </Button>
+                  </div>
+                </form>
+                <p className="text-xs text-muted-foreground mt-3">
+                  {Math.ceil(remainingSeconds / 60)} minutes remaining in this video
+                </p>
               </div>
-              <Button type="submit" size="default">
-                Start watching
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCommitment(false)}
-              >
-                Skip
-              </Button>
-            </form>
-            <p className="text-xs text-muted-foreground mt-3">
-              {Math.ceil(remainingSeconds / 60)} minutes remaining in this video
-            </p>
-          </div>
-        )}
+            )}
 
-        {/* Video Player */}
-        <div className="mb-4">
-          <YouTubePlayer
-            videoId={video.youtube_video_id}
-            startSeconds={video.current_position_seconds || 0}
-            onReady={setPlayer}
-            onStateChange={handleStateChange}
-            onTimeUpdate={handleTimeUpdate}
-            onEnd={handleVideoEnd}
-            autoplay={!showCommitment}
-          />
-        </div>
-
-        {/* Playback Controls */}
-        <div className="mb-6">
-          <PlaybackControls
-            isPlaying={isPlaying}
-            playbackRate={playbackRate}
-            onPlay={play}
-            onPause={pause}
-            onSkipBack={handleSkipBack}
-            onSkipForward={handleSkipForward}
-            onPlaybackRateChange={setPlaybackRate}
-          />
-        </div>
-
-        {/* Video Info & Progress */}
-        <div className="space-y-4">
-          <div>
-            <h1 className="text-xl font-medium text-foreground mb-1">
-              {video.title}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {video.channel_name}
-            </p>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                {formatDuration(Math.floor(currentTime))} / {formatDuration(duration)}
-              </span>
-              <span className="text-foreground font-medium">
-                {progress}% complete
-              </span>
+            {/* Video Player */}
+            <div>
+              <YouTubePlayer
+                videoId={video.youtube_video_id}
+                startSeconds={video.current_position_seconds || 0}
+                onReady={setPlayer}
+                onStateChange={handleStateChange}
+                onTimeUpdate={handleTimeUpdate}
+                onEnd={handleVideoEnd}
+                autoplay={!showCommitment}
+              />
             </div>
-            <Progress value={progress} className="h-2" />
-          </div>
 
-          {/* Status */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant={isPlaying ? 'default' : 'secondary'}>
-              {isPlaying ? 'Playing' : 'Paused'}
-            </Badge>
-            {video.intent && (
-              <Badge variant="outline">
-                {video.intent === 'custom' ? video.custom_intent : video.intent}
-              </Badge>
-            )}
-            {committedMinutes && (
-              <Badge variant="outline" className="gap-1">
-                <Clock className="h-3 w-3" />
-                {getWatchedMinutes()}/{committedMinutes}m watched
-              </Badge>
-            )}
+            {/* Playback Controls */}
+            <PlaybackControls
+              isPlaying={isPlaying}
+              playbackRate={playbackRate}
+              onPlay={play}
+              onPause={pause}
+              onSkipBack={handleSkipBack}
+              onSkipForward={handleSkipForward}
+              onPlaybackRateChange={setPlaybackRate}
+            />
+
+            {/* Video Info & Progress */}
+            <div className="space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-lg lg:text-xl font-medium text-foreground mb-1 line-clamp-2">
+                    {video.title}
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    {video.channel_name}
+                  </p>
+                </div>
+                
+                {/* Prev/Next buttons */}
+                {playlistVideos.length > 1 && (
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={navigateToPreviousVideo}
+                      disabled={!hasPrevious}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm text-muted-foreground px-2">
+                      {currentIndex + 1}/{playlistVideos.length}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={navigateToNextVideo}
+                      disabled={!hasNext}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Progress Bar */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {formatDuration(Math.floor(currentTime))} / {formatDuration(duration)}
+                  </span>
+                  <span className="text-foreground font-medium">
+                    {progress}% complete
+                  </span>
+                </div>
+                <Progress value={progress} className="h-2" />
+              </div>
+
+              {/* Status Badges */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant={isPlaying ? 'default' : 'secondary'}>
+                  {isPlaying ? 'Playing' : 'Paused'}
+                </Badge>
+                {video.intent && (
+                  <Badge variant="outline">
+                    {video.intent === 'custom' ? video.custom_intent : video.intent}
+                  </Badge>
+                )}
+                {committedMinutes && (
+                  <Badge variant="outline" className="gap-1">
+                    <Clock className="h-3 w-3" />
+                    {getWatchedMinutes()}/{committedMinutes}m watched
+                  </Badge>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
