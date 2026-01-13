@@ -19,6 +19,9 @@ interface PlaylistGroupProps {
   onVideoDelete: (e: React.MouseEvent, id: string) => void;
   onPlaylistDelete?: (playlistId: string) => void;
   getIntentLabel: (intent: string, customIntent?: string | null) => string;
+  selectionMode?: boolean;
+  selectedVideoIds?: Set<string>;
+  onToggleSelect?: (videoId: string) => void;
 }
 
 export function PlaylistGroup({
@@ -28,6 +31,9 @@ export function PlaylistGroup({
   onVideoDelete,
   onPlaylistDelete,
   getIntentLabel,
+  selectionMode,
+  selectedVideoIds,
+  onToggleSelect,
 }: PlaylistGroupProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -147,6 +153,9 @@ export function PlaylistGroup({
                   onDelete={onVideoDelete}
                   onClick={onVideoClick}
                   getIntentLabel={getIntentLabel}
+                  selectionMode={selectionMode}
+                  isSelected={selectedVideoIds?.has(video.id)}
+                  onToggleSelect={onToggleSelect}
                 />
               </div>
             ))}

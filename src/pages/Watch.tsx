@@ -112,6 +112,54 @@ export default function Watch() {
     }
   }, [user, authLoading, navigate]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in input
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+
+      switch (e.key.toLowerCase()) {
+        case ' ':
+          e.preventDefault();
+          isPlaying ? pause() : play();
+          break;
+        case 'arrowleft':
+          e.preventDefault();
+          seekRelative(-10);
+          break;
+        case 'arrowright':
+          e.preventDefault();
+          seekRelative(10);
+          break;
+        case 'arrowup':
+          e.preventDefault();
+          setPlaybackRate(Math.min(playbackRate + 0.25, 2));
+          break;
+        case 'arrowdown':
+          e.preventDefault();
+          setPlaybackRate(Math.max(playbackRate - 0.25, 0.5));
+          break;
+        case 'n':
+          if (hasNext) navigateToNextVideo();
+          break;
+        case 'p':
+          if (hasPrevious) navigateToPreviousVideo();
+          break;
+        case 'm':
+          handleMarkCurrentComplete();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlaying, play, pause, seekRelative, playbackRate, setPlaybackRate]);
+
+  const currentIndex = playlistVideos.findIndex(v => v.id === video?.id);
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex < playlistVideos.length - 1;
+
   // Handle time updates from player
   const handleTimeUpdate = useCallback((time: number, dur: number) => {
     setCurrentTime(time);
@@ -305,9 +353,6 @@ export default function Watch() {
 
   const progress = calculateProgress(currentTime, duration);
   const remainingSeconds = Math.max(0, duration - currentTime);
-  const currentIndex = playlistVideos.findIndex(v => v.id === video.id);
-  const hasPrevious = currentIndex > 0;
-  const hasNext = currentIndex < playlistVideos.length - 1;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

@@ -192,6 +192,82 @@ export function useVideos() {
     }
   });
 
+  // Bulk mark as complete
+  const bulkMarkComplete = useMutation({
+    mutationFn: async (videoIds: string[]) => {
+      if (!user) throw new Error('Not authenticated');
+      
+      const { error } = await supabase
+        .from('videos')
+        .update({
+          status: 'completed' as VideoStatus,
+          completed_at: new Date().toISOString()
+        })
+        .in('id', videoIds)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['videos', user?.id] });
+      toast({
+        title: 'Videos completed',
+        description: 'All selected videos marked as complete.',
+      });
+    }
+  });
+
+  // Bulk delete
+  const bulkDelete = useMutation({
+    mutationFn: async (videoIds: string[]) => {
+      if (!user) throw new Error('Not authenticated');
+      
+      const { error } = await supabase
+        .from('videos')
+        .delete()
+        .in('id', videoIds)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['videos', user?.id] });
+      toast({
+        title: 'Videos deleted',
+        description: 'Selected videos have been removed.',
+      });
+    }
+  });
+
+  // Bulk update intent
+  const bulkUpdateIntent = useMutation({
+    mutationFn: async ({ videoIds, intent, customIntent }: {
+      videoIds: string[];
+      intent: VideoIntent;
+      customIntent?: string;
+    }) => {
+      if (!user) throw new Error('Not authenticated');
+      
+      const { error } = await supabase
+        .from('videos')
+        .update({
+          intent,
+          custom_intent: customIntent || null
+        })
+        .in('id', videoIds)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['videos', user?.id] });
+      toast({
+        title: 'Intent updated',
+        description: 'Selected videos have been updated.',
+      });
+    }
+  });
+
   const reorderVideos = useCallback(async (reorderedVideos: Video[]) => {
     if (!user) return;
     
@@ -229,6 +305,9 @@ export function useVideos() {
     updateVideoIntent,
     deleteVideo,
     markComplete,
+    bulkMarkComplete,
+    bulkDelete,
+    bulkUpdateIntent,
     reorderVideos
   };
 }
