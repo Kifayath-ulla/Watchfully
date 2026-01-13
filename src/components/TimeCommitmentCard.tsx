@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Clock, Target, Zap, TrendingUp } from 'lucide-react';
 
 interface TimeCommitmentCardProps {
@@ -41,100 +40,87 @@ export function TimeCommitmentCard({
   const quickOptions = [15, 30, 45, 60];
 
   return (
-    <Card className="max-w-lg mx-auto border-border/60 shadow-sm">
-      <CardContent className="p-5 space-y-4">
-        {/* Header */}
-        <div className="text-center space-y-1">
-          <h3 className="text-lg font-medium text-foreground flex items-center justify-center gap-2">
-            <Clock className="h-5 w-5 text-primary" />
-            How much time do you have?
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Set your intention before watching
-          </p>
-        </div>
+    <div className="bg-card/80 backdrop-blur-sm border border-border/60 rounded-xl p-4 max-w-md mx-auto shadow-sm">
+      {/* Header */}
+      <div className="text-center mb-3">
+        <h3 className="text-base font-medium text-foreground flex items-center justify-center gap-2">
+          <Clock className="h-4 w-4 text-primary" />
+          How much time do you have?
+        </h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Set your intention before watching
+        </p>
+      </div>
 
-        {/* Quick Select Buttons */}
-        <div className="flex justify-center gap-2">
+      {/* Quick Select + Custom Input Row */}
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="flex items-center justify-center gap-2 flex-wrap">
           {quickOptions.map((option) => (
             <Button
               key={option}
               type="button"
               variant={minutes === option ? "default" : "outline"}
               size="sm"
-              className="min-w-[52px]"
+              className="min-w-[48px] h-8 text-xs"
               onClick={() => setMinutes(option)}
             >
               {option}m
             </Button>
           ))}
+          <div className="flex items-center gap-1.5">
+            <input
+              type="number"
+              value={minutes}
+              onChange={(e) => setMinutes(parseInt(e.target.value) || 0)}
+              min="1"
+              max="180"
+              className="w-14 h-8 px-2 text-center rounded-md border border-input bg-background text-foreground text-sm font-medium focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+            <span className="text-xs text-muted-foreground">min</span>
+          </div>
         </div>
 
-        {/* Custom Input */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex items-center justify-center gap-3">
-            <div className="relative w-24">
-              <input
-                type="number"
-                value={minutes}
-                onChange={(e) => setMinutes(parseInt(e.target.value) || 0)}
-                min="1"
-                max="180"
-                className="w-full h-10 px-3 text-center rounded-md border border-input bg-background text-foreground text-lg font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              />
+        {/* Compact Session Stats */}
+        {sessionStats && minutes > 0 && (
+          <div className="flex items-center justify-center gap-4 text-xs bg-muted/40 rounded-lg py-2 px-3">
+            <div className="flex items-center gap-1.5">
+              <Target className="h-3 w-3 text-muted-foreground" />
+              <span className="text-muted-foreground">Progress:</span>
+              <span className="font-medium text-foreground">{sessionStats.percentagePerSession}%</span>
             </div>
-            <span className="text-sm text-muted-foreground">minutes</span>
+            <div className="w-px h-3 bg-border" />
+            <div className="flex items-center gap-1.5">
+              <TrendingUp className="h-3 w-3 text-muted-foreground" />
+              <span className="text-muted-foreground">Sessions:</span>
+              <span className="font-medium text-foreground">{sessionStats.sessionsNeeded}</span>
+            </div>
+            {sessionStats.willComplete && (
+              <>
+                <div className="w-px h-3 bg-border" />
+                <div className="flex items-center gap-1 text-primary">
+                  <Zap className="h-3 w-3" />
+                  <span className="font-medium">Finish today!</span>
+                </div>
+              </>
+            )}
           </div>
+        )}
 
-          {/* Session Stats */}
-          {sessionStats && minutes > 0 && (
-            <div className="bg-muted/40 rounded-lg p-3 space-y-2">
-              <div className="grid grid-cols-2 gap-3 text-center">
-                <div className="space-y-0.5">
-                  <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                    <Target className="h-3.5 w-3.5" />
-                    Progress per session
-                  </div>
-                  <p className="text-sm font-medium text-foreground">
-                    {sessionStats.percentagePerSession}%
-                  </p>
-                </div>
-                <div className="space-y-0.5">
-                  <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                    <TrendingUp className="h-3.5 w-3.5" />
-                    Sessions to finish
-                  </div>
-                  <p className="text-sm font-medium text-foreground">
-                    {sessionStats.sessionsNeeded} {sessionStats.sessionsNeeded === 1 ? 'session' : 'sessions'}
-                  </p>
-                </div>
-              </div>
-              
-              {sessionStats.willComplete && (
-                <div className="flex items-center justify-center gap-1.5 text-xs text-primary pt-1">
-                  <Zap className="h-3.5 w-3.5" />
-                  <span className="font-medium">You can finish this video today!</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Video info */}
-          <p className="text-xs text-center text-muted-foreground">
-            {remainingMinutes} minutes remaining in this video
-          </p>
-
-          {/* Actions */}
-          <div className="flex gap-2 justify-center">
-            <Button type="submit" className="min-w-[140px]">
-              Start watching
-            </Button>
-            <Button type="button" variant="ghost" onClick={onSkip}>
+        {/* Video info + Actions */}
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-xs text-muted-foreground">
+            {remainingMinutes}min remaining
+          </span>
+          <div className="flex gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={onSkip} className="h-8 text-xs">
               Skip
             </Button>
+            <Button type="submit" size="sm" className="h-8 text-xs">
+              Start watching
+            </Button>
           </div>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+      </form>
+    </div>
   );
 }

@@ -57,6 +57,7 @@ export default function Index() {
   // Filter state
   const [statusFilter, setStatusFilter] = useState<VideoStatus | 'all'>('all');
   const [intentFilter, setIntentFilter] = useState<VideoIntent | 'all'>('all');
+  const [videoFilter, setVideoFilter] = useState<string | 'all'>('all');
   
   // Selection state
   const [selectionMode, setSelectionMode] = useState(false);
@@ -104,15 +105,35 @@ export default function Index() {
       }
     });
 
-    // Apply filters
-    const filteredStandalone = standalone.filter(video => {
+    // Apply video filter first
+    let filteredStandalone = standalone;
+    let filteredPlaylistList = playlists;
+    
+    if (videoFilter !== 'all') {
+      if (videoFilter === 'playlists-only') {
+        filteredStandalone = [];
+      } else if (videoFilter === 'standalone-only') {
+        filteredPlaylistList = [];
+      } else if (videoFilter.startsWith('playlist:')) {
+        const playlistId = videoFilter.replace('playlist:', '');
+        filteredPlaylistList = playlists.filter(p => p.id === playlistId);
+        filteredStandalone = [];
+      } else if (videoFilter.startsWith('video:')) {
+        const videoId = videoFilter.replace('video:', '');
+        filteredStandalone = standalone.filter(v => v.id === videoId);
+        filteredPlaylistList = [];
+      }
+    }
+
+    // Apply status and intent filters
+    filteredStandalone = filteredStandalone.filter(video => {
       const statusMatch = statusFilter === 'all' || video.status === statusFilter;
       const intentMatch = intentFilter === 'all' || video.intent === intentFilter;
       return statusMatch && intentMatch;
     });
 
     // Filter playlists by their derived status and stored intent
-    const filteredPlaylistIds = playlists.filter(playlist => {
+    const filteredPlaylistIds = filteredPlaylistList.filter(playlist => {
       const playlistVids = playlistMap.get(playlist.id) || [];
       if (playlistVids.length === 0) return false;
       
@@ -128,7 +149,7 @@ export default function Index() {
       filteredPlaylists: playlists.filter(p => filteredPlaylistIds.includes(p.id)),
       filteredStandaloneVideos: filteredStandalone,
     };
-  }, [videos, playlists, statusFilter, intentFilter]);
+  }, [videos, playlists, statusFilter, intentFilter, videoFilter]);
 
   // Selection handlers
   const toggleSelection = (videoId: string) => {
@@ -268,9 +289,10 @@ export default function Index() {
   const clearFilters = () => {
     setStatusFilter('all');
     setIntentFilter('all');
+    setVideoFilter('all');
   };
 
-  const hasActiveFilters = statusFilter !== 'all' || intentFilter !== 'all';
+  const hasActiveFilters = statusFilter !== 'all' || intentFilter !== 'all' || videoFilter !== 'all';
   const displayedCount = filteredStandaloneVideos.length + filteredPlaylists.reduce((acc, p) => acc + (playlistVideos.get(p.id)?.length || 0), 0);
   const totalCount = videos.length;
 
@@ -384,9 +406,13 @@ export default function Index() {
                   <QueueFilters
                     statusFilter={statusFilter}
                     intentFilter={intentFilter}
+                    videoFilter={videoFilter}
                     onStatusChange={setStatusFilter}
                     onIntentChange={setIntentFilter}
+                    onVideoFilterChange={setVideoFilter}
                     onClear={clearFilters}
+                    videos={videos}
+                    playlists={playlists}
                   />
                   <Button
                     variant={selectionMode ? "secondary" : "outline"}

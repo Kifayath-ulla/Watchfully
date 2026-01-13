@@ -432,19 +432,9 @@ export default function Watch() {
               />
             </div>
 
-            {/* Playback Controls */}
-            <PlaybackControls
-              isPlaying={isPlaying}
-              playbackRate={playbackRate}
-              onPlay={play}
-              onPause={pause}
-              onSkipBack={handleSkipBack}
-              onSkipForward={handleSkipForward}
-              onPlaybackRateChange={setPlaybackRate}
-            />
-
-            {/* Video Info & Progress */}
-            <div className="space-y-4">
+            {/* Video Info - Title, Channel, Controls, Progress */}
+            <div className="space-y-3">
+              {/* Title and Nav */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <h1 className="text-lg lg:text-xl font-medium text-foreground mb-1 line-clamp-2">
@@ -481,33 +471,40 @@ export default function Watch() {
                 )}
               </div>
 
+              {/* Playback Controls - Compact inline */}
+              <PlaybackControls
+                isPlaying={isPlaying}
+                playbackRate={playbackRate}
+                onPlay={play}
+                onPause={pause}
+                onSkipBack={handleSkipBack}
+                onSkipForward={handleSkipForward}
+                onPlaybackRateChange={setPlaybackRate}
+              />
+
               {/* Progress Bar */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {formatDuration(Math.floor(currentTime))} / {formatDuration(duration)}
-                  </span>
-                  <span className="text-foreground font-medium">
-                    {progress}% complete
-                  </span>
-                </div>
+              <div className="space-y-1.5">
                 <Progress value={progress} className="h-2" />
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{formatDuration(Math.floor(currentTime))} / {formatDuration(duration)}</span>
+                  <span className="font-medium text-foreground">{progress}% complete</span>
+                </div>
               </div>
 
               {/* Status Badges */}
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant={isPlaying ? 'default' : 'secondary'}>
+                <Badge variant={isPlaying ? 'default' : 'secondary'} className="text-xs">
                   {isPlaying ? 'Playing' : 'Paused'}
                 </Badge>
                 {video.intent && (
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="text-xs">
                     {video.intent === 'custom' ? video.custom_intent : video.intent}
                   </Badge>
                 )}
                 {committedMinutes && (
-                  <Badge variant="outline" className="gap-1">
+                  <Badge variant="outline" className="gap-1 text-xs">
                     <Clock className="h-3 w-3" />
-                    {getWatchedMinutes()}/{committedMinutes}m watched
+                    {getWatchedMinutes()}/{committedMinutes}m
                   </Badge>
                 )}
               </div>
