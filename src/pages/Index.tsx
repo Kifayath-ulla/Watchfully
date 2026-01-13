@@ -590,7 +590,7 @@ export default function Index() {
 
       {/* Footer */}
       <footer className="py-8 text-center text-sm text-muted-foreground">
-        Made with love kiffu❤️
+        Made with love kiffu&lt;3
       </footer>
 
       <AddVideoModal open={showAddModal} onOpenChange={setShowAddModal} />
