@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Trash2, PlayCircle, GripVertical } from 'lucide-react';
 import { Video } from '@/types/video';
 import { formatDuration, calculateProgress } from '@/lib/youtube';
@@ -13,9 +14,20 @@ interface SortableVideoCardProps {
   onDelete: (e: React.MouseEvent, id: string) => void;
   onClick: (video: Video) => void;
   getIntentLabel: (intent: string, customIntent?: string | null) => string;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (videoId: string) => void;
 }
 
-export function SortableVideoCard({ video, onDelete, onClick, getIntentLabel }: SortableVideoCardProps) {
+export function SortableVideoCard({ 
+  video, 
+  onDelete, 
+  onClick, 
+  getIntentLabel,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
+}: SortableVideoCardProps) {
   const {
     attributes,
     listeners,
@@ -34,24 +46,46 @@ export function SortableVideoCard({ video, onDelete, onClick, getIntentLabel }: 
 
   const progress = calculateProgress(video.current_position_seconds || 0, video.duration_seconds);
 
+  const handleClick = () => {
+    if (selectionMode && onToggleSelect) {
+      onToggleSelect(video.id);
+    } else {
+      onClick(video);
+    }
+  };
+
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleSelect?.(video.id);
+  };
+
   return (
     <Card
       ref={setNodeRef}
       style={style}
-      className="overflow-hidden cursor-pointer transition-all hover:ring-2 hover:ring-primary/50 hover:shadow-lg"
-      onClick={() => onClick(video)}
+      className={`overflow-hidden cursor-pointer transition-all hover:ring-2 hover:ring-primary/50 hover:shadow-lg ${isSelected ? 'ring-2 ring-primary bg-primary/5' : ''}`}
+      onClick={handleClick}
     >
       <CardContent className="p-0">
         <div className="flex flex-col sm:flex-row">
-          {/* Drag Handle */}
-          <div
-            className="hidden sm:flex items-center justify-center w-10 bg-muted/50 cursor-grab active:cursor-grabbing hover:bg-muted"
-            {...attributes}
-            {...listeners}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <GripVertical className="h-5 w-5 text-muted-foreground" />
-          </div>
+          {/* Selection Checkbox or Drag Handle */}
+          {selectionMode ? (
+            <div
+              className="hidden sm:flex items-center justify-center w-10 bg-muted/50 hover:bg-muted"
+              onClick={handleCheckboxClick}
+            >
+              <Checkbox checked={isSelected} />
+            </div>
+          ) : (
+            <div
+              className="hidden sm:flex items-center justify-center w-10 bg-muted/50 cursor-grab active:cursor-grabbing hover:bg-muted"
+              {...attributes}
+              {...listeners}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GripVertical className="h-5 w-5 text-muted-foreground" />
+            </div>
+          )}
 
           {/* Thumbnail */}
           <div className="relative sm:w-48 flex-shrink-0 group">

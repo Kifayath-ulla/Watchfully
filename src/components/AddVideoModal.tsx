@@ -5,11 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useVideos } from '@/hooks/useVideos';
+import { usePlaylists } from '@/hooks/usePlaylists';
 import { extractVideoId, extractPlaylistId, fetchVideoDetails, isPlaylistUrl } from '@/lib/youtube';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Film, ListVideo } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { VideoIntent } from '@/types/video';
 
 interface AddVideoModalProps {
   open: boolean;
@@ -40,6 +42,7 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [urlType, setUrlType] = useState<'video' | 'playlist' | null>(null);
   const { addVideo } = useVideos();
+  const { addPlaylist } = usePlaylists();
   const { toast } = useToast();
 
   const handleUrlChange = (value: string) => {
@@ -98,9 +101,21 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
         }
 
         const playlistData = data as PlaylistData;
+        
+        // First, create the playlist record
+        const createdPlaylist = await addPlaylist.mutateAsync({
+          youtube_playlist_id: playlistId,
+          title: playlistData.playlistTitle,
+          thumbnail_url: playlistData.playlistThumbnail,
+          total_videos: playlistData.totalResults,
+          intent: intent as VideoIntent,
+          custom_intent: intent === 'custom' ? customIntent : undefined,
+        });
+
         let addedCount = 0;
         let failedCount = 0;
 
+        // Then add all videos with the playlist_id
         for (const video of playlistData.videos) {
           try {
             await addVideo.mutateAsync({
@@ -109,8 +124,9 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
               thumbnail_url: video.thumbnail,
               channel_name: video.channelTitle,
               duration_seconds: video.durationSeconds,
-              intent: intent as 'learning' | 'career' | 'curiosity' | 'leisure' | 'custom',
+              intent: intent as VideoIntent,
               custom_intent: intent === 'custom' ? customIntent : undefined,
+              playlist_id: createdPlaylist.id,
               playlist_order: video.position,
             });
             addedCount++;
