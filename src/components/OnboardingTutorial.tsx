@@ -83,6 +83,7 @@ const tutorialSteps: TutorialStep[] = [
 ];
 
 const TUTORIAL_STORAGE_KEY = 'watchfully-tutorial-completed';
+const NEW_USER_KEY = 'watchfully-new-user';
 
 export function OnboardingTutorial() {
   const { user } = useAuth();
@@ -92,9 +93,12 @@ export function OnboardingTutorial() {
   useEffect(() => {
     if (!user) return;
 
-    // Check if user has completed tutorial
+    // Check if this is a brand new user (flag set during signup)
+    const isNewUser = localStorage.getItem(`${NEW_USER_KEY}-${user.id}`);
     const tutorialCompleted = localStorage.getItem(`${TUTORIAL_STORAGE_KEY}-${user.id}`);
-    if (!tutorialCompleted) {
+    
+    // Only show tutorial if: is new user AND hasn't completed tutorial
+    if (isNewUser && !tutorialCompleted) {
       // Small delay to let the page load first
       const timer = setTimeout(() => setOpen(true), 500);
       return () => clearTimeout(timer);
@@ -104,6 +108,8 @@ export function OnboardingTutorial() {
   const handleComplete = () => {
     if (user) {
       localStorage.setItem(`${TUTORIAL_STORAGE_KEY}-${user.id}`, 'true');
+      // Clear the new user flag after completing tutorial
+      localStorage.removeItem(`${NEW_USER_KEY}-${user.id}`);
     }
     setOpen(false);
   };

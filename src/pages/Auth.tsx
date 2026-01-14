@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGuest } from "@/contexts/GuestContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const emailSchema = z.string().email("Please enter a valid email address");
@@ -100,6 +101,7 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
 
   const { user, signIn, signUp, resetPassword } = useAuth();
+  const { isGuestMode, enableGuestMode } = useGuest();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -121,10 +123,10 @@ export default function Auth() {
   }, []);
 
   useEffect(() => {
-    if (user) {
+    if (user || isGuestMode) {
       navigate("/", { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, isGuestMode, navigate]);
 
   // Rotate quotes with fade animation
   useEffect(() => {
@@ -202,12 +204,13 @@ export default function Auth() {
       } else {
         const { error } = await signUp(email, password, displayName);
         if (error) {
-          if (error.message.includes("already registered")) {
+          if (error.message.includes("already registered") || error.message.includes("User already registered")) {
             toast({
               title: "Account exists",
               description: "This email is already registered. Try signing in instead.",
               variant: "destructive",
             });
+            setMode("login");
           } else {
             toast({
               title: "Sign up failed",
@@ -217,9 +220,12 @@ export default function Auth() {
           }
         } else {
           toast({
-            title: "Welcome",
-            description: "Your account has been created.",
+            title: "Check your email!",
+            description: "We sent you a confirmation link. Please verify your email and then sign in.",
+            duration: 8000,
           });
+          setMode("login");
+          setPassword("");
         }
       }
     } finally {
@@ -482,18 +488,45 @@ export default function Auth() {
               </form>
 
               {mode !== "forgot" && (
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => {
+                <>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => {
                       setMode(mode === "login" ? "signup" : "login");
                       setErrors({});
+                      }}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-250"
+                    >
+                      {mode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+                    </button>
+                  </div>
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-border/50" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-card px-2 text-muted-foreground">or</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      enableGuestMode();
+                      navigate("/");
                     }}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-250"
                   >
-                    {mode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-                  </button>
-                </div>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Just Explore
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground">
+                    Try it out without an account. Your data stays local.
+                  </p>
+                </>
               )}
             </CardContent>
           </Card>
