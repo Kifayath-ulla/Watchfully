@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, displayName?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -65,6 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     });
+    
+    // Mark as new user for tutorial (only if signup was successful)
+    if (!error && data.user) {
+      localStorage.setItem(`watchfully-new-user-${data.user.id}`, 'true');
+    }
     
     return { error: error as Error | null };
   };

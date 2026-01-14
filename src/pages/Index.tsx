@@ -1,11 +1,12 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGuest } from "@/contexts/GuestContext";
 import { useVideos } from "@/hooks/useVideos";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
-import { Play, Plus, LogOut, Settings, CheckSquare, FolderPlus, HelpCircle } from "lucide-react";
+import { Play, Plus, LogOut, Settings, CheckSquare, FolderPlus, HelpCircle, UserPlus } from "lucide-react";
 import { AddVideoModal } from "@/components/AddVideoModal";
 import { Video, VideoStatus, VideoIntent } from "@/types/video";
 import { ProgressDashboard } from "@/components/ProgressDashboard";
@@ -24,6 +25,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,6 +56,7 @@ const TUTORIAL_STORAGE_KEY = 'watchfully-tutorial-completed';
 
 export default function Index() {
   const { user, loading, signOut } = useAuth();
+  const { isGuestMode, guestVideos, exitGuestMode } = useGuest();
   const { videos, isLoading: videosLoading, deleteVideo, reorderVideos, bulkMarkComplete, bulkDelete, bulkUpdateIntent, undoBulkComplete, undoBulkDelete, undoBulkIntent } = useVideos();
   const { playlists, deletePlaylist } = usePlaylists();
   const { toast } = useToast();
@@ -87,10 +90,11 @@ export default function Index() {
   );
 
   useEffect(() => {
-    if (!loading && !user) {
+    // Allow access if user is logged in OR in guest mode
+    if (!loading && !user && !isGuestMode) {
       navigate("/auth", { replace: true });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, isGuestMode, navigate]);
 
   // Helper to get playlist status from its videos
   const getPlaylistStatus = (playlistVids: Video[]): VideoStatus => {
@@ -279,7 +283,7 @@ export default function Index() {
     );
   }
 
-  if (!user) return null;
+  if (!user && !isGuestMode) return null;
 
   const hasVideos = videos && videos.length > 0;
 
@@ -337,72 +341,92 @@ export default function Index() {
       {/* Onboarding Tutorial */}
       <OnboardingTutorial />
       
-      {/* Goal Notifications */}
-      <GoalNotifications />
+      {/* Goal Notifications - only for logged in users */}
+      {user && <GoalNotifications />}
 
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="font-serif text-xl font-medium text-foreground">Watchfully</h1>
-            <WeeklyStreakDots dailyGoalMinutes={profile?.daily_goal_minutes || 45} />
+            {isGuestMode && (
+              <Badge variant="secondary" className="text-xs">
+                Exploring
+              </Badge>
+            )}
+            {user && <WeeklyStreakDots dailyGoalMinutes={profile?.daily_goal_minutes || 45} />}
           </div>
           <div className="flex items-center gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={reopenTutorial}>
-                    <HelpCircle className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>View tutorial</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            {user && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={reopenTutorial}>
+                      <HelpCircle className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>View tutorial</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             <ThemeToggle />
 
-            {/* Settings Sheet */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent>
-                <SheetHeader>
-                  <SheetTitle>Settings</SheetTitle>
-                  <SheetDescription>Customize your watching experience</SheetDescription>
-                </SheetHeader>
-                <div className="space-y-6 py-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="silent-mode">Silent Mode</Label>
-                      <p className="text-xs text-muted-foreground">Disable all nudges and reminders</p>
+            {/* Settings Sheet - only for logged in users */}
+            {user && (
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent>
+                  <SheetHeader>
+                    <SheetTitle>Settings</SheetTitle>
+                    <SheetDescription>Customize your watching experience</SheetDescription>
+                  </SheetHeader>
+                  <div className="space-y-6 py-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="silent-mode">Silent Mode</Label>
+                        <p className="text-xs text-muted-foreground">Disable all nudges and reminders</p>
+                      </div>
+                      <Switch
+                        id="silent-mode"
+                        checked={profile?.silent_mode ?? false}
+                        onCheckedChange={toggleSilentMode}
+                      />
                     </div>
-                    <Switch
-                      id="silent-mode"
-                      checked={profile?.silent_mode ?? false}
-                      onCheckedChange={toggleSilentMode}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="exit-friction">Exit Friction</Label>
-                      <p className="text-xs text-muted-foreground">Ask for confirmation before leaving</p>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="exit-friction">Exit Friction</Label>
+                        <p className="text-xs text-muted-foreground">Ask for confirmation before leaving</p>
+                      </div>
+                      <Switch
+                        id="exit-friction"
+                        checked={profile?.exit_friction_enabled ?? true}
+                        onCheckedChange={toggleExitFriction}
+                      />
                     </div>
-                    <Switch
-                      id="exit-friction"
-                      checked={profile?.exit_friction_enabled ?? true}
-                      onCheckedChange={toggleExitFriction}
-                    />
                   </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+                </SheetContent>
+              </Sheet>
+            )}
 
-            <Button variant="ghost" size="sm" onClick={signOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign out
-            </Button>
+            {/* Guest mode: Show sign up button */}
+            {isGuestMode ? (
+              <Button variant="default" size="sm" onClick={() => {
+                exitGuestMode();
+                navigate("/auth");
+              }}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Create Account
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={signOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign out
+              </Button>
+            )}
           </div>
         </div>
       </header>
