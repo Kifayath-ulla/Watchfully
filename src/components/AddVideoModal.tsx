@@ -12,6 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Film, ListVideo } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { VideoIntent } from '@/types/video';
+import { useAuth } from '@/contexts/AuthContext';
+import { useGuest } from '@/contexts/GuestContext';
 
 interface AddVideoModalProps {
   open: boolean;
@@ -41,6 +43,8 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
   const [customIntent, setCustomIntent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [urlType, setUrlType] = useState<'video' | 'playlist' | null>(null);
+  const { user } = useAuth();
+  const { isGuestMode, addGuestVideo } = useGuest();
   const { addVideo } = useVideos();
   const { addPlaylist } = usePlaylists();
   const { toast } = useToast();
@@ -75,8 +79,57 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
     setIsLoading(true);
     
     try {
+      // Guest mode: only support single videos (no playlists)
+      if (isGuestMode && !user) {
+        if (urlType === 'playlist') {
+          toast({
+            title: 'Create an account',
+            description: 'Playlist import requires an account. You can add single videos in guest mode.',
+            variant: 'destructive'
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        const videoId = extractVideoId(url);
+        if (!videoId) {
+          toast({
+            title: 'Invalid URL',
+            description: 'Please enter a valid YouTube video URL',
+            variant: 'destructive'
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        const videoDetails = await fetchVideoDetails(videoId);
+        
+        addGuestVideo({
+          youtube_video_id: videoId,
+          title: videoDetails.title,
+          thumbnail_url: videoDetails.thumbnail,
+          channel_name: videoDetails.channelTitle,
+          duration_seconds: videoDetails.durationSeconds,
+          current_position_seconds: 0,
+          status: 'not_started',
+          intent: intent as 'learning' | 'career' | 'curiosity' | 'leisure',
+        });
+
+        toast({
+          title: 'Video added',
+          description: `"${videoDetails.title}" added to your local queue`,
+        });
+
+        setUrl('');
+        setIntent('curiosity');
+        setCustomIntent('');
+        setUrlType(null);
+        onOpenChange(false);
+        return;
+      }
+
+      // Logged-in user flow
       if (urlType === 'playlist') {
-        // Directly fetch and import playlist
         const playlistId = extractPlaylistId(url);
         if (!playlistId) {
           toast({
@@ -102,7 +155,6 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
 
         const playlistData = data as PlaylistData;
         
-        // First, create the playlist record
         const createdPlaylist = await addPlaylist.mutateAsync({
           youtube_playlist_id: playlistId,
           title: playlistData.playlistTitle,
@@ -115,7 +167,6 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
         let addedCount = 0;
         let failedCount = 0;
 
-        // Then add all videos with the playlist_id
         for (const video of playlistData.videos) {
           try {
             await addVideo.mutateAsync({
@@ -140,7 +191,6 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
           description: `Added ${addedCount} videos from "${playlistData.playlistTitle}"${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
         });
       } else {
-        // Handle single video
         const videoId = extractVideoId(url);
         if (!videoId) {
           toast({

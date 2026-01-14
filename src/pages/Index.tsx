@@ -6,6 +6,7 @@ import { useVideos } from "@/hooks/useVideos";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Play, Plus, LogOut, Settings, CheckSquare, FolderPlus, HelpCircle, UserPlus } from "lucide-react";
 import { AddVideoModal } from "@/components/AddVideoModal";
 import { Video, VideoStatus, VideoIntent } from "@/types/video";
@@ -60,7 +61,7 @@ export default function Index() {
   const { videos, isLoading: videosLoading, deleteVideo, reorderVideos, bulkMarkComplete, bulkDelete, bulkUpdateIntent, undoBulkComplete, undoBulkDelete, undoBulkIntent } = useVideos();
   const { playlists, deletePlaylist } = usePlaylists();
   const { toast } = useToast();
-  const { profile, toggleSilentMode, toggleExitFriction } = useProfile();
+  const { profile, updateProfile, toggleSilentMode, toggleExitFriction } = useProfile();
   const navigate = useNavigate();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
@@ -113,12 +114,37 @@ export default function Index() {
     );
   }, [searchQuery]);
 
+  // Convert guest videos to Video type for display
+  const effectiveVideos: Video[] = useMemo(() => {
+    if (isGuestMode && !user) {
+      return guestVideos.map(gv => ({
+        id: gv.id,
+        user_id: 'guest',
+        youtube_video_id: gv.youtube_video_id,
+        title: gv.title,
+        channel_name: gv.channel_name,
+        thumbnail_url: gv.thumbnail_url,
+        duration_seconds: gv.duration_seconds,
+        current_position_seconds: gv.current_position_seconds,
+        status: gv.status,
+        intent: gv.intent,
+        custom_intent: null,
+        playlist_id: null,
+        playlist_order: null,
+        created_at: gv.created_at,
+        updated_at: gv.created_at,
+        completed_at: null,
+      }));
+    }
+    return videos;
+  }, [isGuestMode, user, guestVideos, videos]);
+
   // Group videos by playlist
   const { playlistVideos, standaloneVideos, filteredPlaylists, filteredStandaloneVideos } = useMemo(() => {
     const playlistMap = new Map<string, Video[]>();
     const standalone: Video[] = [];
 
-    videos.forEach(video => {
+    effectiveVideos.forEach(video => {
       if (video.playlist_id) {
         const existing = playlistMap.get(video.playlist_id) || [];
         existing.push(video);
@@ -180,7 +206,7 @@ export default function Index() {
       filteredPlaylists: playlists.filter(p => filteredPlaylistIds.includes(p.id)),
       filteredStandaloneVideos: filteredStandalone,
     };
-  }, [videos, playlists, statusFilter, intentFilter, videoFilter, searchQuery, matchesSearch]);
+  }, [effectiveVideos, playlists, statusFilter, intentFilter, videoFilter, searchQuery, matchesSearch]);
 
   // Selection handlers
   const toggleSelection = (videoId: string) => {
@@ -285,7 +311,7 @@ export default function Index() {
 
   if (!user && !isGuestMode) return null;
 
-  const hasVideos = videos && videos.length > 0;
+  const hasVideos = effectiveVideos && effectiveVideos.length > 0;
 
   const getIntentLabel = (intent: string, customIntent?: string | null) => {
     if (intent === "custom" && customIntent) return customIntent;
@@ -308,7 +334,7 @@ export default function Index() {
   };
 
   const handleStartSession = () => {
-    const nextVideo = videos?.find((v) => v.status !== "completed");
+    const nextVideo = effectiveVideos?.find((v) => v.status !== "completed");
     if (nextVideo) {
       navigate(`/watch/${nextVideo.id}`);
     }
@@ -385,6 +411,26 @@ export default function Index() {
                     <SheetDescription>Customize your watching experience</SheetDescription>
                   </SheetHeader>
                   <div className="space-y-6 py-6">
+                    {/* Daily Goal Setting */}
+                    <div className="space-y-2">
+                      <Label htmlFor="daily-goal">Daily Goal (minutes)</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="daily-goal"
+                          type="number"
+                          min={1}
+                          max={1440}
+                          value={profile?.daily_goal_minutes || 45}
+                          onChange={(e) => {
+                            const value = Math.min(1440, Math.max(1, parseInt(e.target.value) || 1));
+                            updateProfile.mutate({ daily_goal_minutes: value });
+                          }}
+                          className="w-24"
+                        />
+                        <span className="text-sm text-muted-foreground">min/day (max 24h)</span>
+                      </div>
+                    </div>
+
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label htmlFor="silent-mode">Silent Mode</Label>
@@ -637,11 +683,6 @@ export default function Index() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Footer */}
-      <footer className="py-4 text-center border-t border-border/50 mt-8 space-y-1">
-        <p className="text-sm text-muted-foreground">Sign in to save your progress across devices</p>
-        <p className="text-xs text-muted-foreground opacity-75">made with love by kiffu&lt;3</p>
-      </footer>
     </div>
   );
 }
