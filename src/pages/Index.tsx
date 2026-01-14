@@ -45,37 +45,48 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
+} from "@dnd-kit/sortable";
 
-const TUTORIAL_STORAGE_KEY = 'watchfully-tutorial-completed';
+const TUTORIAL_STORAGE_KEY = "watchfully-tutorial-completed";
 
 export default function Index() {
   const { user, loading, signOut } = useAuth();
   const { isGuestMode, guestVideos, exitGuestMode } = useGuest();
-  const { videos, isLoading: videosLoading, deleteVideo, reorderVideos, bulkMarkComplete, bulkDelete, bulkUpdateIntent, undoBulkComplete, undoBulkDelete, undoBulkIntent } = useVideos();
+  const {
+    videos,
+    isLoading: videosLoading,
+    deleteVideo,
+    reorderVideos,
+    bulkMarkComplete,
+    bulkDelete,
+    bulkUpdateIntent,
+    undoBulkComplete,
+    undoBulkDelete,
+    undoBulkIntent,
+  } = useVideos();
   const { playlists, deletePlaylist } = usePlaylists();
   const { toast } = useToast();
   const { profile, updateProfile, toggleSilentMode, toggleExitFriction } = useProfile();
   const navigate = useNavigate();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
-  
+
   // Filter state
-  const [statusFilter, setStatusFilter] = useState<VideoStatus | 'all'>('all');
-  const [intentFilter, setIntentFilter] = useState<VideoIntent | 'all'>('all');
-  const [videoFilter, setVideoFilter] = useState<string | 'all'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  
+  const [statusFilter, setStatusFilter] = useState<VideoStatus | "all">("all");
+  const [intentFilter, setIntentFilter] = useState<VideoIntent | "all">("all");
+  const [videoFilter, setVideoFilter] = useState<string | "all">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
   // Selection state
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedVideoIds, setSelectedVideoIds] = useState<Set<string>>(new Set());
-  
+
   // Playlist deletion confirmation
   const [playlistToDelete, setPlaylistToDelete] = useState<string | null>(null);
 
@@ -87,7 +98,7 @@ export default function Index() {
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   useEffect(() => {
@@ -99,27 +110,27 @@ export default function Index() {
 
   // Helper to get playlist status from its videos
   const getPlaylistStatus = (playlistVids: Video[]): VideoStatus => {
-    if (playlistVids.every(v => v.status === 'completed')) return 'completed';
-    if (playlistVids.some(v => v.status === 'in_progress' || v.status === 'completed')) return 'in_progress';
-    return 'not_started';
+    if (playlistVids.every((v) => v.status === "completed")) return "completed";
+    if (playlistVids.some((v) => v.status === "in_progress" || v.status === "completed")) return "in_progress";
+    return "not_started";
   };
 
   // Search matching helper
-  const matchesSearch = useCallback((video: Video) => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      video.title.toLowerCase().includes(query) ||
-      (video.channel_name?.toLowerCase().includes(query) ?? false)
-    );
-  }, [searchQuery]);
+  const matchesSearch = useCallback(
+    (video: Video) => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      return video.title.toLowerCase().includes(query) || (video.channel_name?.toLowerCase().includes(query) ?? false);
+    },
+    [searchQuery],
+  );
 
   // Convert guest videos to Video type for display
   const effectiveVideos: Video[] = useMemo(() => {
     if (isGuestMode && !user) {
-      return guestVideos.map(gv => ({
+      return guestVideos.map((gv) => ({
         id: gv.id,
-        user_id: 'guest',
+        user_id: "guest",
         youtube_video_id: gv.youtube_video_id,
         title: gv.title,
         channel_name: gv.channel_name,
@@ -144,7 +155,7 @@ export default function Index() {
     const playlistMap = new Map<string, Video[]>();
     const standalone: Video[] = [];
 
-    effectiveVideos.forEach(video => {
+    effectiveVideos.forEach((video) => {
       if (video.playlist_id) {
         const existing = playlistMap.get(video.playlist_id) || [];
         existing.push(video);
@@ -157,19 +168,19 @@ export default function Index() {
     // Apply video filter first
     let filteredStandalone = standalone;
     let filteredPlaylistList = playlists;
-    
-    if (videoFilter !== 'all') {
-      if (videoFilter === 'playlists-only') {
+
+    if (videoFilter !== "all") {
+      if (videoFilter === "playlists-only") {
         filteredStandalone = [];
-      } else if (videoFilter === 'standalone-only') {
+      } else if (videoFilter === "standalone-only") {
         filteredPlaylistList = [];
-      } else if (videoFilter.startsWith('playlist:')) {
-        const playlistId = videoFilter.replace('playlist:', '');
-        filteredPlaylistList = playlists.filter(p => p.id === playlistId);
+      } else if (videoFilter.startsWith("playlist:")) {
+        const playlistId = videoFilter.replace("playlist:", "");
+        filteredPlaylistList = playlists.filter((p) => p.id === playlistId);
         filteredStandalone = [];
-      } else if (videoFilter.startsWith('video:')) {
-        const videoId = videoFilter.replace('video:', '');
-        filteredStandalone = standalone.filter(v => v.id === videoId);
+      } else if (videoFilter.startsWith("video:")) {
+        const videoId = videoFilter.replace("video:", "");
+        filteredStandalone = standalone.filter((v) => v.id === videoId);
         filteredPlaylistList = [];
       }
     }
@@ -178,39 +189,45 @@ export default function Index() {
     filteredStandalone = filteredStandalone.filter(matchesSearch);
 
     // Apply status and intent filters
-    filteredStandalone = filteredStandalone.filter(video => {
-      const statusMatch = statusFilter === 'all' || video.status === statusFilter;
-      const intentMatch = intentFilter === 'all' || video.intent === intentFilter;
+    filteredStandalone = filteredStandalone.filter((video) => {
+      const statusMatch = statusFilter === "all" || video.status === statusFilter;
+      const intentMatch = intentFilter === "all" || video.intent === intentFilter;
       return statusMatch && intentMatch;
     });
 
     // Filter playlists by their derived status and stored intent
-    const filteredPlaylistIds = filteredPlaylistList.filter(playlist => {
-      const playlistVids = playlistMap.get(playlist.id) || [];
-      if (playlistVids.length === 0) return false;
-      
-      // Check if any video in playlist matches search
-      if (searchQuery.trim() && !playlistVids.some(matchesSearch) && !playlist.title.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
-      }
-      
-      const playlistStatus = getPlaylistStatus(playlistVids);
-      const statusMatch = statusFilter === 'all' || playlistStatus === statusFilter;
-      const intentMatch = intentFilter === 'all' || playlist.intent === intentFilter;
-      return statusMatch && intentMatch;
-    }).map(p => p.id);
+    const filteredPlaylistIds = filteredPlaylistList
+      .filter((playlist) => {
+        const playlistVids = playlistMap.get(playlist.id) || [];
+        if (playlistVids.length === 0) return false;
+
+        // Check if any video in playlist matches search
+        if (
+          searchQuery.trim() &&
+          !playlistVids.some(matchesSearch) &&
+          !playlist.title.toLowerCase().includes(searchQuery.toLowerCase())
+        ) {
+          return false;
+        }
+
+        const playlistStatus = getPlaylistStatus(playlistVids);
+        const statusMatch = statusFilter === "all" || playlistStatus === statusFilter;
+        const intentMatch = intentFilter === "all" || playlist.intent === intentFilter;
+        return statusMatch && intentMatch;
+      })
+      .map((p) => p.id);
 
     return {
       playlistVideos: playlistMap,
       standaloneVideos: standalone,
-      filteredPlaylists: playlists.filter(p => filteredPlaylistIds.includes(p.id)),
+      filteredPlaylists: playlists.filter((p) => filteredPlaylistIds.includes(p.id)),
       filteredStandaloneVideos: filteredStandalone,
     };
   }, [effectiveVideos, playlists, statusFilter, intentFilter, videoFilter, searchQuery, matchesSearch]);
 
   // Selection handlers
   const toggleSelection = (videoId: string) => {
-    setSelectedVideoIds(prev => {
+    setSelectedVideoIds((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(videoId)) {
         newSet.delete(videoId);
@@ -227,7 +244,7 @@ export default function Index() {
   };
 
   const selectAll = () => {
-    const allIds = new Set(videos.map(v => v.id));
+    const allIds = new Set(videos.map((v) => v.id));
     setSelectedVideoIds(allIds);
   };
 
@@ -262,10 +279,10 @@ export default function Index() {
 
   const handleBulkIntent = async (intent: VideoIntent, customIntent?: string) => {
     if (selectedVideoIds.size === 0) return;
-    const previousStates = await bulkUpdateIntent.mutateAsync({ 
-      videoIds: Array.from(selectedVideoIds), 
+    const previousStates = await bulkUpdateIntent.mutateAsync({
+      videoIds: Array.from(selectedVideoIds),
       intent,
-      customIntent 
+      customIntent,
     });
     clearSelection();
     toast({
@@ -290,8 +307,8 @@ export default function Index() {
     }
   };
 
-  const playlistToDeleteData = playlists.find(p => p.id === playlistToDelete);
-  const playlistVideoCount = playlistToDelete ? (playlistVideos.get(playlistToDelete)?.length || 0) : 0;
+  const playlistToDeleteData = playlists.find((p) => p.id === playlistToDelete);
+  const playlistVideoCount = playlistToDelete ? playlistVideos.get(playlistToDelete)?.length || 0 : 0;
 
   // Reopen tutorial
   const reopenTutorial = () => {
@@ -342,7 +359,7 @@ export default function Index() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    
+
     if (over && active.id !== over.id) {
       const oldIndex = videos.findIndex((v) => v.id === active.id);
       const newIndex = videos.findIndex((v) => v.id === over.id);
@@ -352,21 +369,24 @@ export default function Index() {
   };
 
   const clearFilters = () => {
-    setStatusFilter('all');
-    setIntentFilter('all');
-    setVideoFilter('all');
-    setSearchQuery('');
+    setStatusFilter("all");
+    setIntentFilter("all");
+    setVideoFilter("all");
+    setSearchQuery("");
   };
 
-  const hasActiveFilters = statusFilter !== 'all' || intentFilter !== 'all' || videoFilter !== 'all' || searchQuery.trim() !== '';
-  const displayedCount = filteredStandaloneVideos.length + filteredPlaylists.reduce((acc, p) => acc + (playlistVideos.get(p.id)?.length || 0), 0);
+  const hasActiveFilters =
+    statusFilter !== "all" || intentFilter !== "all" || videoFilter !== "all" || searchQuery.trim() !== "";
+  const displayedCount =
+    filteredStandaloneVideos.length +
+    filteredPlaylists.reduce((acc, p) => acc + (playlistVideos.get(p.id)?.length || 0), 0);
   const totalCount = videos.length;
 
   return (
     <div className="min-h-screen bg-background">
       {/* Onboarding Tutorial */}
       <OnboardingTutorial />
-      
+
       {/* Goal Notifications - only for logged in users */}
       {user && <GoalNotifications />}
 
@@ -418,11 +438,11 @@ export default function Index() {
                         <Input
                           id="daily-goal"
                           type="number"
-                          min={1}
-                          max={1440}
+                          min={0}
+                          max={1000}
                           value={profile?.daily_goal_minutes || 45}
                           onChange={(e) => {
-                            const value = Math.min(1440, Math.max(1, parseInt(e.target.value) || 1));
+                            const value = Math.min(1000, Math.max(1, parseInt(e.target.value) || 0));
                             updateProfile.mutate({ daily_goal_minutes: value });
                           }}
                           className="w-24"
@@ -460,10 +480,14 @@ export default function Index() {
 
             {/* Guest mode: Show sign up button */}
             {isGuestMode ? (
-              <Button variant="default" size="sm" onClick={() => {
-                exitGuestMode();
-                navigate("/auth");
-              }}>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  exitGuestMode();
+                  navigate("/auth");
+                }}
+              >
                 <UserPlus className="h-4 w-4 mr-2" />
                 Create Account
               </Button>
@@ -527,12 +551,7 @@ export default function Index() {
                   </div>
                   <div className="flex items-center gap-2">
                     {standaloneVideos.length >= 2 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowCreatePlaylist(true)}
-                        className="h-8"
-                      >
+                      <Button variant="outline" size="sm" onClick={() => setShowCreatePlaylist(true)} className="h-8">
                         <FolderPlus className="h-4 w-4 mr-1" />
                         Create Playlist
                       </Button>
@@ -586,17 +605,13 @@ export default function Index() {
                 />
               )}
 
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <div className="grid gap-3">
                   {/* Render playlists as grouped items */}
                   {filteredPlaylists.map((playlist) => {
                     const playlistVideoList = playlistVideos.get(playlist.id);
                     if (!playlistVideoList || playlistVideoList.length === 0) return null;
-                    
+
                     return (
                       <PlaylistGroup
                         key={playlist.id}
@@ -616,7 +631,7 @@ export default function Index() {
                   {/* Render standalone videos */}
                   {filteredStandaloneVideos.length > 0 && (
                     <SortableContext
-                      items={filteredStandaloneVideos.map(v => v.id)}
+                      items={filteredStandaloneVideos.map((v) => v.id)}
                       strategy={verticalListSortingStrategy}
                     >
                       {filteredStandaloneVideos.map((video) => (
@@ -638,7 +653,9 @@ export default function Index() {
                   {filteredPlaylists.length === 0 && filteredStandaloneVideos.length === 0 && hasActiveFilters && (
                     <div className="text-center py-8 text-muted-foreground">
                       <p>No videos match your filters.</p>
-                      <Button variant="link" onClick={clearFilters}>Clear filters</Button>
+                      <Button variant="link" onClick={clearFilters}>
+                        Clear filters
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -658,9 +675,8 @@ export default function Index() {
         </div>
       </section>
 
-
       <AddVideoModal open={showAddModal} onOpenChange={setShowAddModal} />
-      
+
       <CreatePlaylistModal
         open={showCreatePlaylist}
         onOpenChange={setShowCreatePlaylist}
@@ -673,7 +689,8 @@ export default function Index() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete playlist?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete "{playlistToDeleteData?.title}" and all {playlistVideoCount} videos in it. This action cannot be undone.
+              This will permanently delete "{playlistToDeleteData?.title}" and all {playlistVideoCount} videos in it.
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -682,7 +699,6 @@ export default function Index() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
     </div>
   );
 }
