@@ -171,7 +171,7 @@ export function YouTubePlayer({
   // Show fallback when embed is blocked
   if (embedBlocked) {
     return (
-      <div className="w-full flex items-center justify-center py-8">
+      <div className="w-full h-full flex items-center justify-center">
         <div className="relative w-full max-w-2xl aspect-video bg-card rounded-xl overflow-hidden border border-border shadow-xl">
           {/* Thumbnail with overlay */}
           <img 
