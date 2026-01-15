@@ -93,12 +93,19 @@ export function OnboardingTutorial() {
   useEffect(() => {
     if (!user) return;
 
-    // Check if this is a brand new user (flag set during signup)
-    const isNewUser = localStorage.getItem(`${NEW_USER_KEY}-${user.id}`);
+    // Check if user has already completed the tutorial
     const tutorialCompleted = localStorage.getItem(`${TUTORIAL_STORAGE_KEY}-${user.id}`);
     
-    // Only show tutorial if: is new user AND hasn't completed tutorial
-    if (isNewUser && !tutorialCompleted) {
+    // If tutorial is already completed, never show it again
+    if (tutorialCompleted === 'true') {
+      return;
+    }
+
+    // Check if this is a brand new user (flag set during signup in AuthContext)
+    const isNewUser = localStorage.getItem(`${NEW_USER_KEY}-${user.id}`);
+    
+    // Only show tutorial for new users who haven't completed it
+    if (isNewUser === 'true') {
       // Small delay to let the page load first
       const timer = setTimeout(() => setOpen(true), 500);
       return () => clearTimeout(timer);

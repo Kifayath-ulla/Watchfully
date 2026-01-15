@@ -9,7 +9,8 @@ import {
   CheckCircle2, 
   Flame, 
   TrendingUp,
-  Calendar
+  Calendar,
+  Target
 } from 'lucide-react';
 
 interface DailyStats {
@@ -157,37 +158,45 @@ export function ProgressDashboard({ dailyGoalMinutes = 45 }: ProgressDashboardPr
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <TrendingUp className="h-4 w-4" />
-              <span className="text-xs">Goal</span>
+              <Target className="h-4 w-4" />
+              <span className="text-xs">Daily Goal</span>
             </div>
             <p className="text-2xl font-semibold text-foreground">
-              {Math.round(progressPercent)}
-              <span className="text-sm font-normal text-muted-foreground">%</span>
+              {dailyGoalMinutes > 0 ? (
+                <>
+                  {dailyGoalMinutes}
+                  <span className="text-sm font-normal text-muted-foreground">m</span>
+                </>
+              ) : (
+                <span className="text-sm font-normal text-muted-foreground">No limit</span>
+              )}
             </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Daily Goal Progress */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center justify-between">
-            <span>Daily Goal Progress</span>
-            <Badge variant={progressPercent >= 100 ? 'default' : 'secondary'}>
-              {todayStats.watchedMinutes}/{dailyGoalMinutes}m
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Progress value={progressPercent} className="h-3" />
-          <p className="text-xs text-muted-foreground mt-2">
-            {progressPercent >= 100 
-              ? '🎉 Goal achieved! Great job today.'
-              : `${dailyGoalMinutes - todayStats.watchedMinutes} minutes left to reach your goal`
-            }
-          </p>
-        </CardContent>
-      </Card>
+      {dailyGoalMinutes > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center justify-between">
+              <span>Daily Goal Progress</span>
+              <Badge variant={progressPercent >= 100 ? 'default' : 'secondary'}>
+                {todayStats.watchedMinutes}/{dailyGoalMinutes}m
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Progress value={progressPercent} className="h-3" />
+            <p className="text-xs text-muted-foreground mt-2">
+              {progressPercent >= 100 
+                ? '🎉 Goal achieved! Great job today.'
+                : `${Math.max(0, dailyGoalMinutes - todayStats.watchedMinutes)} minutes left to reach your goal`
+              }
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Weekly Overview */}
       <Card>

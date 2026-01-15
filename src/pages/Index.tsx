@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGuest } from "@/contexts/GuestContext";
@@ -6,7 +6,6 @@ import { useVideos } from "@/hooks/useVideos";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Play, Plus, LogOut, Settings, CheckSquare, FolderPlus, HelpCircle, UserPlus } from "lucide-react";
 import { AddVideoModal } from "@/components/AddVideoModal";
 import { Video, VideoStatus, VideoIntent } from "@/types/video";
@@ -21,6 +20,9 @@ import { WeeklyStreakDots } from "@/components/WeeklyStreakDots";
 import { QueueSearch } from "@/components/QueueSearch";
 import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
 import { OnboardingTutorial } from "@/components/OnboardingTutorial";
+import { GuestPrompt } from "@/components/GuestPrompt";
+import { DailyGoalEditor } from "@/components/DailyGoalEditor";
+import { Footer } from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
@@ -383,7 +385,7 @@ export default function Index() {
   const totalCount = videos.length;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Onboarding Tutorial */}
       <OnboardingTutorial />
 
@@ -431,25 +433,8 @@ export default function Index() {
                     <SheetDescription>Customize your watching experience</SheetDescription>
                   </SheetHeader>
                   <div className="space-y-6 py-6">
-                    {/* Daily Goal Setting */}
-                    <div className="space-y-2">
-                      <Label htmlFor="daily-goal">Daily Goal (minutes)</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          id="daily-goal"
-                          type="number"
-                          min={0}
-                          max={1000}
-                          value={profile?.daily_goal_minutes || 45}
-                          onChange={(e) => {
-                            const value = Math.min(1000, Math.max(1, parseInt(e.target.value) || 0));
-                            updateProfile.mutate({ daily_goal_minutes: value });
-                          }}
-                          className="w-24"
-                        />
-                        <span className="text-sm text-muted-foreground">min/day (max 24h)</span>
-                      </div>
-                    </div>
+                    {/* Daily Goal Setting - using new component */}
+                    <DailyGoalEditor currentGoal={profile?.daily_goal_minutes || 45} />
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
@@ -523,17 +508,25 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Progress Dashboard */}
-      <section className="py-4">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <h3 className="text-lg font-medium text-foreground mb-3">Your Progress</h3>
-          <ProgressDashboard dailyGoalMinutes={profile?.daily_goal_minutes || 45} />
-        </div>
-      </section>
+      {/* Progress Dashboard - only show for logged in users */}
+      {user && (
+        <section className="py-4">
+          <div className="container mx-auto px-4 max-w-4xl">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-medium text-foreground">Your Progress</h3>
+              <DailyGoalEditor currentGoal={profile?.daily_goal_minutes || 45} compact />
+            </div>
+            <ProgressDashboard dailyGoalMinutes={profile?.daily_goal_minutes || 45} />
+          </div>
+        </section>
+      )}
 
       {/* Video Queue or Empty State */}
-      <section className="py-6">
+      <section className="py-6 flex-1">
         <div className="container mx-auto px-4 max-w-4xl">
+          {/* Guest Prompt - show when guest has 3+ videos */}
+          {isGuestMode && !user && <GuestPrompt videoCount={effectiveVideos.length} />}
+          
           {videosLoading ? (
             <div className="text-center py-16 text-muted-foreground">Loading your videos...</div>
           ) : hasVideos ? (
@@ -699,6 +692,9 @@ export default function Index() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
