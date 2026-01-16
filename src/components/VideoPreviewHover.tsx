@@ -42,13 +42,13 @@ export function VideoPreviewHover({ video, children }: VideoPreviewHoverProps) {
         {children}
       </HoverCardTrigger>
       <HoverCardContent 
-        side="left" 
+        side="right" 
         align="center" 
         className="w-72 p-0 overflow-hidden z-50 shadow-lg animate-in fade-in-0 zoom-in-95"
-        sideOffset={12}
+        sideOffset={16}
         collisionPadding={{ top: 20, right: 20, bottom: 20, left: 20 }}
         avoidCollisions={true}
-        sticky="always"
+        sticky="partial"
       >
         {/* Video Preview - Larger */}
         <div className="relative aspect-video bg-muted">
