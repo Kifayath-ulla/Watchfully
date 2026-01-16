@@ -429,25 +429,28 @@ export default function Watch() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
+        {/* Sidebar - Scrollable independently */}
         <div 
           className={cn(
-            "w-80 flex-shrink-0 transition-all duration-300 overflow-hidden",
-            sidebarOpen ? "translate-x-0" : "-translate-x-full w-0 lg:w-0"
+            "flex-shrink-0 transition-all duration-300 border-r border-border",
+            sidebarOpen ? "w-80" : "w-0"
           )}
         >
-          <PlaylistSidebar
-            currentVideoId={videoId || ''}
-            videos={playlistVideos}
-            playlist={playlist}
-            onMarkComplete={handleMarkComplete}
-            onDeleteVideo={handleDeleteVideo}
-          />
+          <div className="h-full overflow-y-auto">
+            <PlaylistSidebar
+              currentVideoId={videoId || ''}
+              videos={playlistVideos}
+              playlist={playlist}
+              onMarkComplete={handleMarkComplete}
+              onDeleteVideo={handleDeleteVideo}
+            />
+          </div>
         </div>
 
-        {/* Main content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-5xl mx-auto p-4 lg:p-6 space-y-4">
+        {/* Main content - Video Player stays fixed */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Fixed Video Section */}
+          <div className="flex-shrink-0 p-4 lg:p-6">
             {/* Commitment Selection */}
             {showCommitment && (
               <TimeCommitmentCard
@@ -458,7 +461,7 @@ export default function Watch() {
             )}
 
             {/* Video Player */}
-            <div>
+            <div className="max-w-5xl mx-auto">
               <YouTubePlayer
                 videoId={video.youtube_video_id}
                 startSeconds={video.current_position_seconds || 0}
@@ -472,9 +475,11 @@ export default function Watch() {
                 videoTitle={video.title}
               />
             </div>
+          </div>
 
-            {/* Video Info - Title, Channel, Controls, Progress */}
-            <div className="space-y-3">
+          {/* Scrollable Video Info Section */}
+          <div className="flex-1 overflow-y-auto px-4 lg:px-6 pb-6">
+            <div className="max-w-5xl mx-auto space-y-3">
               {/* Title and Nav */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
