@@ -503,9 +503,9 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Progress Dashboard - only show for logged in users - STICKY */}
+      {/* Progress Dashboard - only show for logged in users */}
       {user && (
-        <section className="py-4 sticky top-[57px] z-30 bg-background/95 backdrop-blur-sm border-b border-border/30">
+        <section className="py-4">
           <div className="container mx-auto px-4 max-w-4xl">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-medium text-foreground">Your Progress</h3>
@@ -517,7 +517,7 @@ export default function Index() {
       )}
 
       {/* Video Queue or Empty State */}
-      <section className="py-6 flex-1 overflow-x-visible">
+      <section className="py-6 flex-1">
         <div className="container mx-auto px-4 max-w-4xl">
           {/* Guest Prompt - show when guest has 3+ videos */}
           {isGuestMode && !user && <GuestPrompt videoCount={effectiveVideos.length} />}
