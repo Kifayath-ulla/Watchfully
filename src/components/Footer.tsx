@@ -12,17 +12,8 @@ export function Footer() {
           </div>
 
           {/* Center: Branding */}
-          <p className="text-xs text-muted-foreground order-last sm:order-none">
-            Made with love by{' '}
-            <a
-              href="https://www.linkedin.com/in/thisiskifayath"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-foreground hover:text-primary transition-colors"
-            >
-              kiffu
-            </a>
-            {' '}💜
+          <p className="text-xs text-muted-foreground opacity-75 order-last sm:order-none">
+            made with love by kiffu&lt;3
           </p>
 
           {/* Right: Social Links */}

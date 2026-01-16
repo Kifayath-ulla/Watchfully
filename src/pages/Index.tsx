@@ -78,6 +78,7 @@ export default function Index() {
   const navigate = useNavigate();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState<VideoStatus | "all">("all");
@@ -314,10 +315,7 @@ export default function Index() {
 
   // Reopen tutorial
   const reopenTutorial = () => {
-    if (user) {
-      localStorage.removeItem(`${TUTORIAL_STORAGE_KEY}-${user.id}`);
-      window.location.reload();
-    }
+    setShowTutorial(true);
   };
 
   if (loading) {
@@ -387,7 +385,7 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Onboarding Tutorial */}
-      <OnboardingTutorial />
+      <OnboardingTutorial forceOpen={showTutorial} onClose={() => setShowTutorial(false)} />
 
       {/* Goal Notifications - only for logged in users */}
       {user && <GoalNotifications />}
@@ -433,9 +431,6 @@ export default function Index() {
                     <SheetDescription>Customize your watching experience</SheetDescription>
                   </SheetHeader>
                   <div className="space-y-6 py-6">
-                    {/* Daily Goal Setting - using new component */}
-                    <DailyGoalEditor currentGoal={profile?.daily_goal_minutes || 45} />
-
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label htmlFor="silent-mode">Silent Mode</Label>
@@ -508,9 +503,9 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Progress Dashboard - only show for logged in users */}
+      {/* Progress Dashboard - only show for logged in users - STICKY */}
       {user && (
-        <section className="py-4">
+        <section className="py-4 sticky top-[57px] z-30 bg-background/95 backdrop-blur-sm border-b border-border/30">
           <div className="container mx-auto px-4 max-w-4xl">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-medium text-foreground">Your Progress</h3>
@@ -522,7 +517,7 @@ export default function Index() {
       )}
 
       {/* Video Queue or Empty State */}
-      <section className="py-6 flex-1">
+      <section className="py-6 flex-1 overflow-x-visible">
         <div className="container mx-auto px-4 max-w-4xl">
           {/* Guest Prompt - show when guest has 3+ videos */}
           {isGuestMode && !user && <GuestPrompt videoCount={effectiveVideos.length} />}

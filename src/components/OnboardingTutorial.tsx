@@ -85,13 +85,26 @@ const tutorialSteps: TutorialStep[] = [
 const TUTORIAL_STORAGE_KEY = 'watchfully-tutorial-completed';
 const NEW_USER_KEY = 'watchfully-new-user';
 
-export function OnboardingTutorial() {
+interface OnboardingTutorialProps {
+  forceOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function OnboardingTutorial({ forceOpen = false, onClose }: OnboardingTutorialProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
+  // Handle forced open from parent
   useEffect(() => {
-    if (!user) return;
+    if (forceOpen) {
+      setCurrentStep(0);
+      setOpen(true);
+    }
+  }, [forceOpen]);
+
+  useEffect(() => {
+    if (!user || forceOpen) return;
 
     // Check if user has already completed the tutorial
     const tutorialCompleted = localStorage.getItem(`${TUTORIAL_STORAGE_KEY}-${user.id}`);
@@ -110,7 +123,7 @@ export function OnboardingTutorial() {
       const timer = setTimeout(() => setOpen(true), 500);
       return () => clearTimeout(timer);
     }
-  }, [user]);
+  }, [user, forceOpen]);
 
   const handleComplete = () => {
     if (user) {
@@ -119,6 +132,7 @@ export function OnboardingTutorial() {
       localStorage.removeItem(`${NEW_USER_KEY}-${user.id}`);
     }
     setOpen(false);
+    onClose?.();
   };
 
   const handleSkip = () => {
