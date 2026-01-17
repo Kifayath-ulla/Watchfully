@@ -10,6 +10,7 @@ import { Play, Plus, LogOut, Settings, CheckSquare, FolderPlus, HelpCircle, User
 import { AddVideoModal } from "@/components/AddVideoModal";
 import { Video, VideoStatus, VideoIntent } from "@/types/video";
 import { ProgressDashboard } from "@/components/ProgressDashboard";
+import { CalendarProgressTracker } from "@/components/CalendarProgressTracker";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SortableVideoCard } from "@/components/SortableVideoCard";
 import { PlaylistGroup } from "@/components/PlaylistGroup";
@@ -506,11 +507,12 @@ export default function Index() {
       {/* Progress Dashboard - only show for logged in users */}
       {user && (
         <section className="py-4">
-          <div className="container mx-auto px-4 max-w-4xl">
-            <div className="flex items-center justify-between mb-3">
+          <div className="container mx-auto px-4 max-w-4xl space-y-4">
+            <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-foreground">Your Progress</h3>
               <DailyGoalEditor currentGoal={profile?.daily_goal_minutes || 45} compact />
             </div>
+            <CalendarProgressTracker dailyGoalMinutes={profile?.daily_goal_minutes || 45} />
             <ProgressDashboard dailyGoalMinutes={profile?.daily_goal_minutes || 45} />
           </div>
         </section>

@@ -394,9 +394,9 @@ export default function Watch() {
   const remainingSeconds = Math.max(0, duration - currentTime);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40 flex-shrink-0">
+      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm flex-shrink-0 z-40">
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={handleExitClick}>
@@ -428,13 +428,15 @@ export default function Watch() {
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar - Scrollable independently */}
-        <div 
+      {/* Main Content - Fixed Height Container */}
+      <div className="flex-1 flex min-h-0">
+        {/* Sidebar - Independently scrollable */}
+        <aside 
           className={cn(
-            "flex-shrink-0 transition-all duration-300 border-r border-border",
+            "flex-shrink-0 border-r border-border transition-[width] duration-300 overflow-hidden",
             sidebarOpen ? "w-80" : "w-0"
           )}
+          style={{ scrollbarGutter: 'stable' }}
         >
           <div className="h-full overflow-y-auto">
             <PlaylistSidebar
@@ -445,41 +447,47 @@ export default function Watch() {
               onDeleteVideo={handleDeleteVideo}
             />
           </div>
-        </div>
+        </aside>
 
-        {/* Main content - Video Player stays fixed */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Fixed Video Section */}
-          <div className="flex-shrink-0 p-4 lg:p-6">
-            {/* Commitment Selection */}
+        {/* Main Content Area - Two sections */}
+        <main className="flex-1 min-w-0 flex flex-col">
+          {/* Fixed Video Section (never scrolls) */}
+          <div className="flex-shrink-0 bg-background">
+            {/* Commitment Selection - Above video */}
             {showCommitment && (
-              <TimeCommitmentCard
-                remainingSeconds={remainingSeconds}
-                onStartWatching={handleStartWatching}
-                onSkip={() => setShowCommitment(false)}
-              />
+              <div className="p-4 lg:px-6 border-b border-border/30">
+                <div className="max-w-4xl mx-auto">
+                  <TimeCommitmentCard
+                    remainingSeconds={remainingSeconds}
+                    onStartWatching={handleStartWatching}
+                    onSkip={() => setShowCommitment(false)}
+                  />
+                </div>
+              </div>
             )}
 
-            {/* Video Player */}
-            <div className="max-w-5xl mx-auto">
-              <YouTubePlayer
-                videoId={video.youtube_video_id}
-                startSeconds={video.current_position_seconds || 0}
-                onReady={setPlayer}
-                onStateChange={handleStateChange}
-                onTimeUpdate={handleTimeUpdate}
-                onEnd={handleVideoEnd}
-                autoplay={!showCommitment}
-                videoDuration={video.duration_seconds}
-                videoProgress={video.current_position_seconds || 0}
-                videoTitle={video.title}
-              />
+            {/* Video Player - Stays fixed */}
+            <div className="p-4 lg:p-6 pb-3">
+              <div className="max-w-4xl mx-auto">
+                <YouTubePlayer
+                  videoId={video.youtube_video_id}
+                  startSeconds={video.current_position_seconds || 0}
+                  onReady={setPlayer}
+                  onStateChange={handleStateChange}
+                  onTimeUpdate={handleTimeUpdate}
+                  onEnd={handleVideoEnd}
+                  autoplay={!showCommitment}
+                  videoDuration={video.duration_seconds}
+                  videoProgress={video.current_position_seconds || 0}
+                  videoTitle={video.title}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Scrollable Video Info Section */}
-          <div className="flex-1 overflow-y-auto px-4 lg:px-6 pb-6">
-            <div className="max-w-5xl mx-auto space-y-3">
+          {/* Scrollable Info Section */}
+          <div className="flex-1 overflow-y-auto px-4 lg:px-6 pb-6" style={{ scrollbarGutter: 'stable' }}>
+            <div className="max-w-4xl mx-auto space-y-4">
               {/* Title and Nav */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
@@ -556,7 +564,7 @@ export default function Watch() {
               </div>
             </div>
           </div>
-        </div>
+        </main>
       </div>
 
       {/* Exit Friction Modal */}
