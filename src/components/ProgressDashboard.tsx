@@ -197,36 +197,3 @@ export function ProgressDashboard({ dailyGoalMinutes = 45 }: ProgressDashboardPr
           </CardContent>
         </Card>
       )}
-
-      {/* Weekly Overview */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            This Week
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-between gap-1">
-            {getWeekDays().map((day) => (
-              <div key={day.date} className="flex flex-col items-center gap-1">
-                <div 
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs ${
-                    day.achieved 
-                      ? 'bg-primary text-primary-foreground' 
-                      : day.minutes > 0 
-                        ? 'bg-primary/20 text-primary' 
-                        : 'bg-muted text-muted-foreground'
-                  }`}
-                >
-                  {day.achieved ? '✓' : day.minutes > 0 ? Math.round(day.minutes) : '–'}
-                </div>
-                <span className="text-xs text-muted-foreground">{day.day}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
