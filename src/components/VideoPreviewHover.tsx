@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Play, Clock, Eye } from 'lucide-react';
 import { Video } from '@/types/video';
 import { formatDuration, calculateProgress } from '@/lib/youtube';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface VideoPreviewHoverProps {
   video: Video;
@@ -15,6 +16,7 @@ interface VideoPreviewHoverProps {
 
 export function VideoPreviewHover({ video, children }: VideoPreviewHoverProps) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [showPreview, setShowPreview] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -27,6 +29,11 @@ export function VideoPreviewHover({ video, children }: VideoPreviewHoverProps) {
       iframeRef.current.src = '';
     }
   }, [showPreview]);
+
+  // Disable hover on mobile devices
+  if (isMobile) {
+    return <>{children}</>;
+  }
 
   const videoUrl = `https://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1&mute=1&start=${Math.floor(video.current_position_seconds || 0)}&controls=0&modestbranding=1`;
 
@@ -42,10 +49,10 @@ export function VideoPreviewHover({ video, children }: VideoPreviewHoverProps) {
         {children}
       </HoverCardTrigger>
       <HoverCardContent 
-        side="right" 
+        side="left" 
         align="center" 
-        className="w-72 p-0 overflow-hidden z-50 shadow-lg animate-in fade-in-0 zoom-in-95"
-        sideOffset={16}
+        className="w-72 p-0 overflow-hidden z-[100] shadow-xl animate-in fade-in-0 zoom-in-95"
+        sideOffset={20}
         collisionPadding={{ top: 20, right: 20, bottom: 20, left: 20 }}
         avoidCollisions={true}
         sticky="partial"

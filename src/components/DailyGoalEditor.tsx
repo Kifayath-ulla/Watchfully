@@ -20,11 +20,13 @@ export function DailyGoalEditor({ currentGoal, compact = false }: DailyGoalEdito
   const { updateProfile } = useProfile();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(currentGoal.toString());
+  const [value, setValue] = useState(currentGoal > 0 ? currentGoal.toString() : '');
 
   useEffect(() => {
-    setValue(currentGoal.toString());
-  }, [currentGoal]);
+    if (open) {
+      setValue(currentGoal > 0 ? currentGoal.toString() : '');
+    }
+  }, [currentGoal, open]);
 
   const handleSave = () => {
     const numValue = parseInt(value) || 0;
@@ -63,7 +65,7 @@ export function DailyGoalEditor({ currentGoal, compact = false }: DailyGoalEdito
   };
 
   const handleClear = () => {
-    setValue('0');
+    setValue('');
     updateProfile.mutate({ daily_goal_minutes: 0 });
     toast({ title: 'Daily goal disabled' });
     setOpen(false);

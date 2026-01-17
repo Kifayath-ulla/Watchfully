@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Video, Playlist } from '@/types/video';
 import { formatDuration, calculateProgress } from '@/lib/youtube';
@@ -35,11 +35,26 @@ export function PlaylistSidebar({
 }: PlaylistSidebarProps) {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(true);
+  const currentVideoRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Sort videos by playlist_order
   const sortedVideos = [...videos].sort((a, b) => 
     (a.playlist_order ?? 0) - (b.playlist_order ?? 0)
   );
+
+  // Scroll to current video when it changes
+  useEffect(() => {
+    if (currentVideoRef.current && containerRef.current) {
+      const timer = setTimeout(() => {
+        currentVideoRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [currentVideoId]);
 
   // Calculate totals
   const totalDuration = videos.reduce((sum, v) => sum + v.duration_seconds, 0);
@@ -69,7 +84,7 @@ export function PlaylistSidebar({
   };
 
   return (
-    <div className="h-full bg-card border-r border-border overflow-y-auto">
+    <div ref={containerRef} className="h-full bg-card border-r border-border overflow-y-auto">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
           <button className="w-full p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors text-left">
@@ -121,6 +136,7 @@ export function PlaylistSidebar({
               return (
                 <div
                   key={video.id}
+                  ref={isActive ? currentVideoRef : undefined}
                   className={cn(
                     "group relative flex items-start gap-3 p-3 cursor-pointer transition-colors",
                     isActive 
