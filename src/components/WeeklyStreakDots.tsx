@@ -91,22 +91,31 @@ export function WeeklyStreakDots({ dailyGoalMinutes = 45 }: WeeklyStreakDotsProp
 
   if (!user || weekData.length === 0) return null;
 
+  // Calculate fill percentage for each day
+  const getFillPercent = (day: DayData) => {
+    if (day.achieved) return 100;
+    if (day.minutes === 0) return 0;
+    return Math.min(100, Math.round((day.minutes / dailyGoalMinutes) * 100));
+  };
+
   return (
     <TooltipProvider>
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5">
-          {weekData.map((day) => (
+      <div className="flex items-center gap-1.5">
+        {weekData.map((day) => {
+          const fillPercent = getFillPercent(day);
+          return (
             <Tooltip key={day.date}>
               <TooltipTrigger asChild>
-                <div className="flex flex-col items-center gap-0.5">
-                  <div
-                    className={`w-3.5 h-3.5 rounded-full transition-all ${
-                      day.achieved
-                        ? 'bg-primary shadow-sm'
-                        : day.minutes > 0
-                          ? 'bg-primary/30'
-                          : 'bg-muted'
-                    } ${day.isToday ? 'ring-1 ring-offset-1 ring-offset-background ring-primary/50' : ''}`}
+                <div 
+                  className={`relative w-2.5 h-2.5 rounded-full overflow-hidden transition-all ${
+                    day.isToday ? 'ring-1 ring-primary/60' : ''
+                  }`}
+                  style={{ backgroundColor: 'hsl(var(--muted))' }}
+                >
+                  {/* Fill from bottom like progress */}
+                  <div 
+                    className="absolute bottom-0 left-0 right-0 bg-primary transition-all duration-300"
+                    style={{ height: `${fillPercent}%` }}
                   />
                 </div>
               </TooltipTrigger>
@@ -116,20 +125,13 @@ export function WeeklyStreakDots({ dailyGoalMinutes = 45 }: WeeklyStreakDotsProp
                 {day.achieved && <p className="text-primary">✓ Goal achieved</p>}
               </TooltipContent>
             </Tooltip>
-          ))}
-        </div>
+          );
+        })}
         {streak > 0 && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-0.5 text-orange-500">
-                <Flame className="h-3.5 w-3.5" />
-                <span className="text-xs font-medium">{streak}</span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p>{streak} day streak! 🔥</p>
-            </TooltipContent>
-          </Tooltip>
+          <div className="flex items-center gap-0.5 text-orange-500 ml-1">
+            <Flame className="h-3 w-3" />
+            <span className="text-[10px] font-medium">{streak}</span>
+          </div>
         )}
       </div>
     </TooltipProvider>

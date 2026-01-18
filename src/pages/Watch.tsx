@@ -395,34 +395,34 @@ export default function Watch() {
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
-      {/* Header */}
-      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm flex-shrink-0 z-40">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={handleExitClick}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
+      {/* Header - Thin minimal bar like Lovable editor */}
+      <header className="border-b border-border/30 bg-background/80 backdrop-blur-sm flex-shrink-0 z-40">
+        <div className="px-3 py-1.5 flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={handleExitClick}>
+              <ArrowLeft className="h-3.5 w-3.5 mr-1" />
               Back
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden"
+              className="lg:hidden h-7 w-7"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
-              {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              {sidebarOpen ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
             </Button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <ThemeToggle />
             {committedMinutes && (
-              <Badge variant="secondary" className="gap-1 hidden sm:flex">
-                <Clock className="h-3 w-3" />
-                {committedMinutes}m committed
+              <Badge variant="secondary" className="gap-1 hidden sm:flex text-[10px] h-5 px-1.5">
+                <Clock className="h-2.5 w-2.5" />
+                {committedMinutes}m
               </Badge>
             )}
-            <Button variant="outline" size="sm" onClick={handleMarkCurrentComplete}>
-              <Check className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Mark complete</span>
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={handleMarkCurrentComplete}>
+              <Check className="h-3.5 w-3.5 mr-1" />
+              <span className="hidden sm:inline">Done</span>
             </Button>
           </div>
         </div>
@@ -449,77 +449,72 @@ export default function Watch() {
           </div>
         </aside>
 
-        {/* Main Content Area - Two sections */}
-        <main className="flex-1 min-w-0 flex flex-col">
-          {/* Fixed Video Section (never scrolls) */}
-          <div className="flex-shrink-0 bg-background">
-            {/* Commitment Selection - Above video */}
+        {/* Main Content Area */}
+        <main className="flex-1 min-w-0 overflow-y-auto" style={{ scrollbarGutter: 'stable' }}>
+          <div className="max-w-4xl mx-auto">
+            {/* Commitment Selection - Compact bar above video */}
             {showCommitment && (
-              <div className="p-4 lg:px-6 border-b border-border/30">
-                <div className="max-w-4xl mx-auto">
-                  <TimeCommitmentCard
-                    remainingSeconds={remainingSeconds}
-                    onStartWatching={handleStartWatching}
-                    onSkip={() => setShowCommitment(false)}
-                  />
-                </div>
+              <div className="px-4 pt-3 pb-2">
+                <TimeCommitmentCard
+                  remainingSeconds={remainingSeconds}
+                  onStartWatching={handleStartWatching}
+                  onSkip={() => setShowCommitment(false)}
+                />
               </div>
             )}
 
-            {/* Video Player - Stays fixed */}
-            <div className="p-4 lg:p-6 pb-3">
-              <div className="max-w-4xl mx-auto">
-                <YouTubePlayer
-                  videoId={video.youtube_video_id}
-                  startSeconds={video.current_position_seconds || 0}
-                  onReady={setPlayer}
-                  onStateChange={handleStateChange}
-                  onTimeUpdate={handleTimeUpdate}
-                  onEnd={handleVideoEnd}
-                  autoplay={!showCommitment}
-                  videoDuration={video.duration_seconds}
-                  videoProgress={video.current_position_seconds || 0}
-                  videoTitle={video.title}
-                />
-              </div>
+            {/* Video Player */}
+            <div className="px-4 py-3">
+              <YouTubePlayer
+                videoId={video.youtube_video_id}
+                startSeconds={video.current_position_seconds || 0}
+                onReady={setPlayer}
+                onStateChange={handleStateChange}
+                onTimeUpdate={handleTimeUpdate}
+                onEnd={handleVideoEnd}
+                autoplay={!showCommitment}
+                videoDuration={video.duration_seconds}
+                videoProgress={video.current_position_seconds || 0}
+                videoTitle={video.title}
+              />
             </div>
-          </div>
 
-          {/* Scrollable Info Section */}
-          <div className="flex-1 overflow-y-auto px-4 lg:px-6 pb-6" style={{ scrollbarGutter: 'stable' }}>
-            <div className="max-w-4xl mx-auto space-y-4">
+            {/* Video Info Section */}
+            <div className="px-4 pb-6 space-y-3">
               {/* Title and Nav */}
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-lg lg:text-xl font-medium text-foreground mb-1 line-clamp-2">
+                  <h1 className="text-base font-medium text-foreground mb-0.5 line-clamp-2">
                     {video.title}
                   </h1>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {video.channel_name}
                   </p>
                 </div>
                 
                 {/* Prev/Next buttons */}
                 {playlistVideos.length > 1 && (
-                  <div className="flex items-center gap-1 flex-shrink-0">
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="icon"
+                      className="h-7 w-7"
                       onClick={navigateToPreviousVideo}
                       disabled={!hasPrevious}
                     >
-                      <ChevronLeft className="h-4 w-4" />
+                      <ChevronLeft className="h-3.5 w-3.5" />
                     </Button>
-                    <span className="text-sm text-muted-foreground px-2">
+                    <span className="text-xs text-muted-foreground">
                       {currentIndex + 1}/{playlistVideos.length}
                     </span>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="icon"
+                      className="h-7 w-7"
                       onClick={navigateToNextVideo}
                       disabled={!hasNext}
                     >
-                      <ChevronRight className="h-4 w-4" />
+                      <ChevronRight className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 )}
@@ -537,27 +532,27 @@ export default function Watch() {
               />
 
               {/* Progress Bar */}
-              <div className="space-y-1.5">
-                <Progress value={progress} className="h-2" />
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="space-y-1">
+                <Progress value={progress} className="h-1.5" />
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                   <span>{formatDuration(Math.floor(currentTime))} / {formatDuration(duration)}</span>
-                  <span className="font-medium text-foreground">{progress}% complete</span>
+                  <span className="font-medium text-foreground">{progress}%</span>
                 </div>
               </div>
 
               {/* Status Badges */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant={isPlaying ? 'default' : 'secondary'} className="text-xs">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Badge variant={isPlaying ? 'default' : 'secondary'} className="text-[10px] h-5 px-1.5">
                   {isPlaying ? 'Playing' : 'Paused'}
                 </Badge>
                 {video.intent && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-[10px] h-5 px-1.5">
                     {video.intent === 'custom' ? video.custom_intent : video.intent}
                   </Badge>
                 )}
                 {committedMinutes && (
-                  <Badge variant="outline" className="gap-1 text-xs">
-                    <Clock className="h-3 w-3" />
+                  <Badge variant="outline" className="gap-0.5 text-[10px] h-5 px-1.5">
+                    <Clock className="h-2.5 w-2.5" />
                     {getWatchedMinutes()}/{committedMinutes}m
                   </Badge>
                 )}
