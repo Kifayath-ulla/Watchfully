@@ -395,34 +395,27 @@ export default function Watch() {
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
-      {/* Header - Thin minimal bar like Lovable editor */}
-      <header className="border-b border-border/30 bg-background/80 backdrop-blur-sm flex-shrink-0 z-40">
-        <div className="px-3 py-1.5 flex items-center justify-between">
+      {/* Header - Ultra thin minimal bar */}
+      <header className="border-b border-border/20 bg-background/90 backdrop-blur-sm flex-shrink-0 z-40">
+        <div className="px-2 py-1 flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={handleExitClick}>
-              <ArrowLeft className="h-3.5 w-3.5 mr-1" />
-              Back
+            <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px]" onClick={handleExitClick}>
+              <ArrowLeft className="h-3 w-3" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden h-7 w-7"
+              className="lg:hidden h-6 w-6"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
-              {sidebarOpen ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+              {sidebarOpen ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
             </Button>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <ThemeToggle />
-            {committedMinutes && (
-              <Badge variant="secondary" className="gap-1 hidden sm:flex text-[10px] h-5 px-1.5">
-                <Clock className="h-2.5 w-2.5" />
-                {committedMinutes}m
-              </Badge>
-            )}
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={handleMarkCurrentComplete}>
-              <Check className="h-3.5 w-3.5 mr-1" />
-              <span className="hidden sm:inline">Done</span>
+            <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] gap-1" onClick={handleMarkCurrentComplete}>
+              <Check className="h-3 w-3" />
+              Mark complete
             </Button>
           </div>
         </div>
