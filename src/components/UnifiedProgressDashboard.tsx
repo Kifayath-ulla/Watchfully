@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronLeft, ChevronRight, ChevronDown, Flame, Calendar, Clock, CheckCircle2, Target } from 'lucide-react';
@@ -259,212 +258,193 @@ export function UnifiedProgressDashboard({ dailyGoalMinutes = 45 }: UnifiedProgr
 
   const monthName = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const progressPercent = dailyGoalMinutes > 0 ? Math.min(100, (todayStats.watchedMinutes / dailyGoalMinutes) * 100) : 0;
+  const minutesLeft = Math.max(0, dailyGoalMinutes - todayStats.watchedMinutes);
 
   if (!user) return null;
 
   return (
     <div className="space-y-3">
-      {/* Stats Row + Activity in one unified layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
-        {/* Left: Stats Cards */}
-        <div className="lg:col-span-3 grid grid-cols-4 gap-2">
-          <Card className="bg-card/80">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-1.5 text-muted-foreground mb-0.5">
-                <Clock className="h-3.5 w-3.5" />
-                <span className="text-[10px]">Today</span>
-              </div>
-              <p className="text-xl font-semibold text-foreground">
-                {todayStats.watchedMinutes}
-                <span className="text-xs font-normal text-muted-foreground">m</span>
-              </p>
-            </CardContent>
-          </Card>
+      {/* Stats Row - 4 compact cards */}
+      <div className="grid grid-cols-4 gap-2">
+        {/* Today */}
+        <Card className="bg-card/80">
+          <CardContent className="p-2.5">
+            <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
+              <Clock className="h-3 w-3" />
+              <span className="text-[10px]">Today</span>
+            </div>
+            <p className="text-lg font-semibold text-foreground">
+              {todayStats.watchedMinutes}
+              <span className="text-[10px] font-normal text-muted-foreground">m</span>
+            </p>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-card/80">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-1.5 text-muted-foreground mb-0.5">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                <span className="text-[10px]">Completed</span>
-              </div>
-              <p className="text-xl font-semibold text-foreground">{totalCompleted}</p>
-            </CardContent>
-          </Card>
+        {/* Completed */}
+        <Card className="bg-card/80">
+          <CardContent className="p-2.5">
+            <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
+              <CheckCircle2 className="h-3 w-3" />
+              <span className="text-[10px]">Completed</span>
+            </div>
+            <p className="text-lg font-semibold text-foreground">{totalCompleted}</p>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-card/80">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-1.5 text-muted-foreground mb-0.5">
-                <Flame className="h-3.5 w-3.5 text-orange-500" />
-                <span className="text-[10px]">Streak</span>
-              </div>
-              <p className="text-xl font-semibold text-foreground">
-                {streak}
-                <span className="text-xs font-normal text-muted-foreground"> days</span>
-              </p>
-            </CardContent>
-          </Card>
+        {/* Streak */}
+        <Card className="bg-card/80">
+          <CardContent className="p-2.5">
+            <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
+              <Flame className="h-3 w-3 text-orange-500" />
+              <span className="text-[10px]">Streak</span>
+            </div>
+            <p className="text-lg font-semibold text-foreground">
+              {streak}
+              <span className="text-[10px] font-normal text-muted-foreground"> days</span>
+            </p>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-card/80">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-1.5 text-muted-foreground mb-0.5">
-                <Target className="h-3.5 w-3.5" />
+        {/* Daily Goal with integrated progress bar */}
+        <Card className="bg-card/80">
+          <CardContent className="p-2.5">
+            <div className="flex items-center justify-between mb-0.5">
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Target className="h-3 w-3" />
                 <span className="text-[10px]">Daily Goal</span>
               </div>
-              <p className="text-xl font-semibold text-foreground">
-                {dailyGoalMinutes > 0 ? (
-                  <>
-                    {dailyGoalMinutes}
-                    <span className="text-xs font-normal text-muted-foreground">m</span>
-                  </>
-                ) : (
-                  <span className="text-xs font-normal text-muted-foreground">No limit</span>
-                )}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+              <span className="text-[10px] text-muted-foreground">
+                {Math.round(progressPercent)}%
+              </span>
+            </div>
+            <Progress value={progressPercent} className="h-1 mb-1" />
+            <p className="text-[10px] text-muted-foreground">
+              {minutesLeft > 0 ? `${minutesLeft}m left` : '✓ Goal reached!'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* Right: Activity Tracker (Collapsible) */}
-        <Card className="lg:col-span-2 overflow-hidden bg-card/80">
-          <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-            <CollapsibleTrigger asChild>
-              <div className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-muted/30 transition-colors">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-xs font-medium">Activity</span>
-                  <ChevronDown className={cn(
-                    "h-3 w-3 text-muted-foreground transition-transform",
-                    isExpanded && "rotate-180"
-                  )} />
-                </div>
+      {/* Activity Tracker */}
+      <Card className="bg-card/80 overflow-hidden">
+        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+          <CollapsibleTrigger asChild>
+            <div className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-medium">Activity</span>
               </div>
-            </CollapsibleTrigger>
+              <ChevronDown className={cn(
+                "h-3.5 w-3.5 text-muted-foreground transition-transform",
+                isExpanded && "rotate-180"
+              )} />
+            </div>
+          </CollapsibleTrigger>
 
-            {/* Current Week Preview */}
-            <CardContent className="pt-0 pb-2 px-3">
+          {/* Current Week Preview */}
+          <CardContent className="pt-0 pb-3 px-3">
+            <TooltipProvider>
+              <div className="flex justify-between items-center">
+                {currentWeek.map((day, idx) => (
+                  <Tooltip key={idx}>
+                    <TooltipTrigger asChild>
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-[9px] text-muted-foreground">
+                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][idx]}
+                        </span>
+                        {day ? (
+                          <ProgressCircle 
+                            percentage={day.percentage} 
+                            size={28} 
+                            isToday={day.isToday}
+                            isFuture={day.isFuture}
+                          />
+                        ) : (
+                          <div className="w-7 h-7" />
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    {day && (
+                      <TooltipContent side="bottom" className="text-xs">
+                        <p className="font-medium">{new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+                        <p className="text-muted-foreground">{day.minutes}m ({day.percentage}%)</p>
+                        {day.achieved && <p className="text-primary font-medium">✓ Goal achieved!</p>}
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                ))}
+              </div>
+            </TooltipProvider>
+          </CardContent>
+
+          {/* Expanded Monthly View */}
+          <CollapsibleContent>
+            <CardContent className="pt-0 pb-3 px-3 border-t border-border/50">
+              <div className="flex items-center justify-between py-2">
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => navigateMonth('prev')}>
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </Button>
+                <span className="font-medium text-xs">{monthName}</span>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => navigateMonth('next')}>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-7 gap-0.5 mb-1">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                  <div key={i} className="text-center text-[9px] text-muted-foreground font-medium py-0.5">
+                    {d}
+                  </div>
+                ))}
+              </div>
+
               <TooltipProvider>
-                <div className="flex justify-between items-center">
-                  {currentWeek.map((day, idx) => (
-                    <Tooltip key={idx}>
-                      <TooltipTrigger asChild>
-                        <div className="flex flex-col items-center gap-0.5">
+                <div className="space-y-0.5">
+                  {calendarWeeks.map((week, weekIdx) => (
+                    <div key={weekIdx} className="grid grid-cols-7 gap-0.5">
+                      {week.map((day, dayIdx) => (
+                        <div key={dayIdx} className="flex justify-center">
                           {day ? (
-                            <ProgressCircle 
-                              percentage={day.percentage} 
-                              size={22} 
-                              isToday={day.isToday}
-                              isFuture={day.isFuture}
-                            />
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="relative flex flex-col items-center">
+                                  <ProgressCircle 
+                                    percentage={day.percentage} 
+                                    size={24}
+                                    isToday={day.isToday}
+                                    isFuture={day.isFuture}
+                                  />
+                                  <span className={cn(
+                                    "absolute inset-0 flex items-center justify-center text-[8px] font-medium",
+                                    day.achieved ? "text-primary" : day.isFuture ? "text-muted-foreground/50" : "text-foreground/70"
+                                  )}>
+                                    {day.dayOfMonth}
+                                  </span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs">
+                                <p className="font-medium">{new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+                                {!day.isFuture && (
+                                  <>
+                                    <p className="text-muted-foreground">{day.minutes}m ({day.percentage}%)</p>
+                                    {day.achieved && <p className="text-primary">✓ Goal achieved</p>}
+                                  </>
+                                )}
+                              </TooltipContent>
+                            </Tooltip>
                           ) : (
-                            <div className="w-5 h-5" />
+                            <div className="w-6 h-6" />
                           )}
-                          <span className="text-[9px] text-muted-foreground">
-                            {['S', 'M', 'T', 'W', 'T', 'F', 'S'][idx]}
-                          </span>
                         </div>
-                      </TooltipTrigger>
-                      {day && (
-                        <TooltipContent side="bottom" className="text-xs">
-                          <p className="font-medium">{new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
-                          <p className="text-muted-foreground">{day.minutes}m ({day.percentage}%)</p>
-                          {day.achieved && <p className="text-primary font-medium">✓ Goal achieved!</p>}
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
+                      ))}
+                    </div>
                   ))}
                 </div>
               </TooltipProvider>
             </CardContent>
-
-            {/* Expanded Monthly View */}
-            <CollapsibleContent>
-              <CardContent className="pt-0 pb-3 px-3 border-t border-border/50">
-                <div className="flex items-center justify-between py-2">
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => navigateMonth('prev')}>
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                  </Button>
-                  <span className="font-medium text-xs">{monthName}</span>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => navigateMonth('next')}>
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-7 gap-0.5 mb-1">
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                    <div key={i} className="text-center text-[9px] text-muted-foreground font-medium py-0.5">
-                      {d}
-                    </div>
-                  ))}
-                </div>
-
-                <TooltipProvider>
-                  <div className="space-y-0.5">
-                    {calendarWeeks.map((week, weekIdx) => (
-                      <div key={weekIdx} className="grid grid-cols-7 gap-0.5">
-                        {week.map((day, dayIdx) => (
-                          <div key={dayIdx} className="flex justify-center">
-                            {day ? (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="relative flex flex-col items-center">
-                                    <ProgressCircle 
-                                      percentage={day.percentage} 
-                                      size={24}
-                                      isToday={day.isToday}
-                                      isFuture={day.isFuture}
-                                    />
-                                    <span className={cn(
-                                      "absolute inset-0 flex items-center justify-center text-[8px] font-medium",
-                                      day.achieved ? "text-primary" : day.isFuture ? "text-muted-foreground/50" : "text-foreground/70"
-                                    )}>
-                                      {day.dayOfMonth}
-                                    </span>
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="text-xs">
-                                  <p className="font-medium">{new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
-                                  {!day.isFuture && (
-                                    <>
-                                      <p className="text-muted-foreground">{day.minutes}m ({day.percentage}%)</p>
-                                      {day.achieved && <p className="text-primary">✓ Goal achieved</p>}
-                                    </>
-                                  )}
-                                </TooltipContent>
-                              </Tooltip>
-                            ) : (
-                              <div className="w-6 h-6" />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </TooltipProvider>
-              </CardContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
-      </div>
-
-      {/* Daily Goal Progress Bar */}
-      {dailyGoalMinutes > 0 && (
-        <Card className="bg-card/80">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-medium text-foreground">Daily Goal Progress</span>
-              <Badge variant={progressPercent >= 100 ? "default" : "secondary"} className="text-[10px] h-5">
-                {todayStats.watchedMinutes}/{dailyGoalMinutes}m
-              </Badge>
-            </div>
-            <Progress value={progressPercent} className="h-2" />
-            <p className="text-[10px] text-muted-foreground mt-1">
-              {progressPercent >= 100
-                ? "🎉 Goal achieved! Great job today."
-                : `${Math.max(0, dailyGoalMinutes - todayStats.watchedMinutes)} minutes left to reach your goal`}
-            </p>
-          </CardContent>
-        </Card>
-      )}
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
     </div>
   );
 }

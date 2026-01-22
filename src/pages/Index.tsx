@@ -10,6 +10,8 @@ import { Play, Plus, LogOut, Settings, CheckSquare, FolderPlus, HelpCircle, User
 import { AddVideoModal } from "@/components/AddVideoModal";
 import { Video, VideoStatus, VideoIntent } from "@/types/video";
 import { UnifiedProgressDashboard } from "@/components/UnifiedProgressDashboard";
+import { TaskBar } from "@/components/TaskBar";
+import { PomodoroTimer } from "@/components/PomodoroTimer";
 import { ContinueWatchingReminder } from "@/components/ContinueWatchingReminder";
 
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -514,15 +516,26 @@ export default function Index() {
         </section>
       )}
 
-      {/* Progress Dashboard - only show for logged in users */}
+      {/* Dashboard Section - Progress, Tasks, Pomodoro */}
       {user && (
         <section className="py-4">
-          <div className="container mx-auto px-4 max-w-4xl space-y-3">
-            <div className="flex items-center justify-between">
+          <div className="container mx-auto px-4 max-w-5xl">
+            <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-medium text-foreground">Your Progress</h3>
               <DailyGoalEditor currentGoal={profile?.daily_goal_minutes || 45} compact />
             </div>
-            <UnifiedProgressDashboard dailyGoalMinutes={profile?.daily_goal_minutes || 45} />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              {/* Left: Stats + Activity (takes 2 cols) */}
+              <div className="lg:col-span-2">
+                <UnifiedProgressDashboard dailyGoalMinutes={profile?.daily_goal_minutes || 45} />
+              </div>
+              
+              {/* Right: Tasks & Pomodoro */}
+              <div className="space-y-3">
+                <PomodoroTimer />
+                <TaskBar />
+              </div>
+            </div>
           </div>
         </section>
       )}
