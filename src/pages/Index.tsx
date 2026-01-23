@@ -517,10 +517,10 @@ export default function Index() {
 
       {/* Dashboard Section - Progress & Tasks */}
       {user && (
-        <section className="py-6">
-          <div className="container mx-auto px-4 max-w-5xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-medium text-foreground">Your Progress</h3>
+        <section className="py-4">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-medium text-foreground">Your Progress</h3>
               <DailyGoalEditor currentGoal={profile?.daily_goal_minutes || 45} compact />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -530,7 +530,7 @@ export default function Index() {
               </div>
               
               {/* Right: Tasks */}
-              <div>
+              <div className="min-h-[280px]">
                 <TaskBar />
               </div>
             </div>
@@ -539,8 +539,8 @@ export default function Index() {
       )}
 
       {/* Video Queue or Empty State */}
-      <section className="py-6 flex-1">
-        <div className="container mx-auto px-4 max-w-4xl">
+      <section className="py-4 flex-1">
+        <div className="container mx-auto px-4 max-w-6xl">
           {/* Guest Prompt - show when guest has 3+ videos */}
           {isGuestMode && !user && <GuestPrompt videoCount={effectiveVideos.length} />}
           

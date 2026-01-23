@@ -4,26 +4,52 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ListTodo, Plus, Trash2, Circle } from 'lucide-react';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { ListTodo, Plus, Trash2, Flag } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+type Priority = 'high' | 'medium' | 'low';
 
 interface Task {
   id: string;
   title: string;
   description?: string;
   completed: boolean;
-  priority: 'high' | 'medium' | 'low';
+  priority: Priority;
   createdAt: string;
 }
 
 const STORAGE_KEY = 'watchfully-tasks';
 
+const priorityConfig: Record<Priority, { label: string; color: string; bg: string }> = {
+  high: { 
+    label: 'High', 
+    color: 'text-red-500', 
+    bg: 'bg-red-500/10 border-red-500/30' 
+  },
+  medium: { 
+    label: 'Medium', 
+    color: 'text-amber-500', 
+    bg: 'bg-amber-500/10 border-amber-500/30' 
+  },
+  low: { 
+    label: 'Low', 
+    color: 'text-emerald-500', 
+    bg: 'bg-emerald-500/10 border-emerald-500/30' 
+  },
+};
+
 export function TaskBar() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskPriority, setNewTaskPriority] = useState<Priority>('medium');
   const [isAdding, setIsAdding] = useState(false);
 
   // Load tasks from localStorage
@@ -50,12 +76,13 @@ export function TaskBar() {
       id: crypto.randomUUID(),
       title: newTaskTitle.trim(),
       completed: false,
-      priority: 'medium',
+      priority: newTaskPriority,
       createdAt: new Date().toISOString(),
     };
     
     setTasks(prev => [newTask, ...prev]);
     setNewTaskTitle('');
+    setNewTaskPriority('medium');
     setIsAdding(false);
   };
 
@@ -65,33 +92,37 @@ export function TaskBar() {
     ));
   };
 
+  const updatePriority = (id: string, priority: Priority) => {
+    setTasks(prev => prev.map(task => 
+      task.id === id ? { ...task, priority } : task
+    ));
+  };
+
   const deleteTask = (id: string) => {
     setTasks(prev => prev.filter(task => task.id !== id));
   };
 
-  const incompleteTasks = tasks.filter(t => !t.completed);
-  const completedTasks = tasks.filter(t => t.completed);
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'text-destructive';
-      case 'medium': return 'text-primary';
-      default: return 'text-muted-foreground';
-    }
+  // Sort tasks by priority (high > medium > low)
+  const sortByPriority = (taskList: Task[]) => {
+    const order: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
+    return [...taskList].sort((a, b) => order[a.priority] - order[b.priority]);
   };
 
+  const incompleteTasks = sortByPriority(tasks.filter(t => !t.completed));
+  const completedTasks = tasks.filter(t => t.completed);
+
   return (
-    <Card className="bg-card/80 border-border/50">
-      <CardContent className="p-4 flex flex-col">
-        <div className="flex items-center justify-between mb-3">
+    <Card className="bg-card/80 border-border/50 h-full">
+      <CardContent className="p-5 flex flex-col h-full">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <ListTodo className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">Today's Tasks</span>
+            <ListTodo className="h-5 w-5 text-primary" />
+            <span className="text-base font-medium">Today's Tasks</span>
           </div>
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-7 w-7 rounded-full bg-primary/10 hover:bg-primary/20"
+            className="h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20"
             onClick={() => setIsAdding(true)}
           >
             <Plus className="h-4 w-4 text-primary" />
@@ -99,28 +130,48 @@ export function TaskBar() {
         </div>
 
         {isAdding && (
-          <div className="flex gap-2 mb-3">
-            <Input
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              placeholder="Add a task..."
-              className="h-8 text-sm"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') addTask();
-                if (e.key === 'Escape') setIsAdding(false);
-              }}
-              autoFocus
-            />
-            <Button size="sm" className="h-8 px-3 text-xs" onClick={addTask}>
-              Add
-            </Button>
+          <div className="space-y-2 mb-4">
+            <div className="flex gap-2">
+              <Input
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                placeholder="Add a task..."
+                className="h-9 text-sm"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') addTask();
+                  if (e.key === 'Escape') setIsAdding(false);
+                }}
+                autoFocus
+              />
+              <Button size="sm" className="h-9 px-4" onClick={addTask}>
+                Add
+              </Button>
+            </div>
+            <div className="flex gap-1">
+              {(Object.keys(priorityConfig) as Priority[]).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setNewTaskPriority(p)}
+                  className={cn(
+                    "px-2.5 py-1 text-xs font-medium rounded-md border transition-colors",
+                    newTaskPriority === p 
+                      ? priorityConfig[p].bg 
+                      : "bg-muted/40 border-transparent hover:bg-muted",
+                    priorityConfig[p].color
+                  )}
+                >
+                  {priorityConfig[p].label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
-        <ScrollArea className="flex-1 max-h-48">
-          <div className="space-y-1">
+        <ScrollArea className="flex-1">
+          <div className="space-y-1.5 pr-2">
             {incompleteTasks.length === 0 && completedTasks.length === 0 && !isAdding && (
-              <p className="text-sm text-muted-foreground text-center py-6">
+              <p className="text-sm text-muted-foreground text-center py-8">
                 No tasks yet. Click + to add one.
               </p>
             )}
@@ -128,7 +179,10 @@ export function TaskBar() {
             {incompleteTasks.map(task => (
               <div 
                 key={task.id}
-                className="group flex items-start gap-2.5 p-2.5 rounded-md hover:bg-muted/50 transition-colors"
+                className={cn(
+                  "group flex items-start gap-3 p-3 rounded-lg border transition-colors",
+                  priorityConfig[task.priority].bg
+                )}
               >
                 <Checkbox
                   checked={task.completed}
@@ -136,29 +190,47 @@ export function TaskBar() {
                   className="mt-0.5 h-4 w-4"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium leading-tight truncate">{task.title}</p>
-                  {task.description && (
-                    <p className="text-xs text-muted-foreground truncate">{task.description}</p>
-                  )}
+                  <p className="text-sm font-medium leading-tight">{task.title}</p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => deleteTask(task.id)}
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                </Button>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6">
+                        <Flag className={cn("h-3.5 w-3.5", priorityConfig[task.priority].color)} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {(Object.keys(priorityConfig) as Priority[]).map((p) => (
+                        <DropdownMenuItem 
+                          key={p} 
+                          onClick={() => updatePriority(task.id, p)}
+                          className={priorityConfig[p].color}
+                        >
+                          <Flag className="h-3.5 w-3.5 mr-2" />
+                          {priorityConfig[p].label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => deleteTask(task.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Button>
+                </div>
               </div>
             ))}
 
             {completedTasks.length > 0 && (
-              <div className="pt-3 border-t border-border/50 mt-3">
-                <p className="text-xs text-muted-foreground mb-2 px-2">Completed</p>
+              <div className="pt-4 border-t border-border/50 mt-4">
+                <p className="text-xs text-muted-foreground mb-2 px-1">Completed</p>
                 {completedTasks.slice(0, 3).map(task => (
                   <div 
                     key={task.id}
-                    className="group flex items-start gap-2.5 p-2 rounded-md opacity-60"
+                    className="group flex items-start gap-3 p-2.5 rounded-md opacity-50 hover:opacity-70 transition-opacity"
                   >
                     <Checkbox
                       checked={task.completed}
