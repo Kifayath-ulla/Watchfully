@@ -11,7 +11,6 @@ import { AddVideoModal } from "@/components/AddVideoModal";
 import { Video, VideoStatus, VideoIntent } from "@/types/video";
 import { UnifiedProgressDashboard } from "@/components/UnifiedProgressDashboard";
 import { TaskBar } from "@/components/TaskBar";
-import { PomodoroTimer } from "@/components/PomodoroTimer";
 import { ContinueWatchingReminder } from "@/components/ContinueWatchingReminder";
 
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -516,10 +515,10 @@ export default function Index() {
         </section>
       )}
 
-      {/* Dashboard Section - Progress, Tasks, Pomodoro */}
+      {/* Dashboard Section - Progress & Tasks */}
       {user && (
         <section className="py-6">
-          <div className="container mx-auto px-4 max-w-6xl">
+          <div className="container mx-auto px-4 max-w-5xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-medium text-foreground">Your Progress</h3>
               <DailyGoalEditor currentGoal={profile?.daily_goal_minutes || 45} compact />
@@ -530,9 +529,8 @@ export default function Index() {
                 <UnifiedProgressDashboard dailyGoalMinutes={profile?.daily_goal_minutes || 45} />
               </div>
               
-              {/* Right: Pomodoro & Tasks */}
-              <div className="space-y-4">
-                <PomodoroTimer />
+              {/* Right: Tasks */}
+              <div>
                 <TaskBar />
               </div>
             </div>
