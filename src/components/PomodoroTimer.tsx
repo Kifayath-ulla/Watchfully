@@ -88,23 +88,25 @@ export function PomodoroTimer() {
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
   return (
-    <Card className="bg-card/80">
-      <CardContent className="p-3">
-        <div className="flex items-center gap-2 mb-3">
-          <Timer className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium">Pomodoro</span>
-          <span className="text-[10px] text-muted-foreground ml-auto">{sessions} sessions</span>
+    <Card className="bg-card/80 border-border/50">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Timer className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">Pomodoro</span>
+          </div>
+          <span className="text-xs text-muted-foreground">{sessions} sessions</span>
         </div>
 
         {/* Mode Selector */}
-        <div className="flex gap-1 mb-3">
+        <div className="flex gap-1.5 mb-4">
           {(Object.keys(TIMER_CONFIGS) as TimerMode[]).map((m) => (
             <Button
               key={m}
               variant={mode === m ? 'default' : 'ghost'}
               size="sm"
               className={cn(
-                "h-6 px-2 text-[10px] flex-1",
+                "h-7 px-3 text-xs flex-1",
                 mode === m && "bg-primary text-primary-foreground"
               )}
               onClick={() => switchMode(m)}
@@ -115,9 +117,9 @@ export function PomodoroTimer() {
         </div>
 
         {/* Timer Display */}
-        <div className="flex justify-center mb-3">
-          <div className="relative w-24 h-24">
-            <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 80 80">
+        <div className="flex justify-center mb-4">
+          <div className="relative w-32 h-32">
+            <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 80 80">
               <circle
                 cx="40"
                 cy="40"
@@ -144,10 +146,10 @@ export function PomodoroTimer() {
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xl font-semibold tabular-nums">
+              <span className="text-2xl font-semibold tabular-nums">
                 {formatTime(timeLeft)}
               </span>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {TIMER_CONFIGS[mode].label}
               </span>
             </div>
@@ -155,27 +157,27 @@ export function PomodoroTimer() {
         </div>
 
         {/* Controls */}
-        <div className="flex justify-center gap-2">
+        <div className="flex justify-center gap-3">
           <Button
             variant="outline"
             size="icon"
-            className="h-8 w-8"
+            className="h-10 w-10"
             onClick={resetTimer}
           >
-            <RotateCcw className="h-3.5 w-3.5" />
+            <RotateCcw className="h-4 w-4" />
           </Button>
           <Button
             size="icon"
             className={cn(
-              "h-8 w-8",
+              "h-10 w-10",
               isRunning && "bg-destructive hover:bg-destructive/90"
             )}
             onClick={toggleTimer}
           >
             {isRunning ? (
-              <Pause className="h-3.5 w-3.5" />
+              <Pause className="h-4 w-4" />
             ) : (
-              <Play className="h-3.5 w-3.5 ml-0.5" />
+              <Play className="h-4 w-4 ml-0.5" />
             )}
           </Button>
         </div>

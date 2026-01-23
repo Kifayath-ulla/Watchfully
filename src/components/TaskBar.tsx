@@ -81,9 +81,9 @@ export function TaskBar() {
   };
 
   return (
-    <Card className="bg-card/80 h-full">
-      <CardContent className="p-3 h-full flex flex-col">
-        <div className="flex items-center justify-between mb-2">
+    <Card className="bg-card/80 border-border/50">
+      <CardContent className="p-4 flex flex-col">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <ListTodo className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium">Today's Tasks</span>
@@ -91,36 +91,36 @@ export function TaskBar() {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-6 w-6 rounded-full bg-primary/10 hover:bg-primary/20"
+            className="h-7 w-7 rounded-full bg-primary/10 hover:bg-primary/20"
             onClick={() => setIsAdding(true)}
           >
-            <Plus className="h-3.5 w-3.5 text-primary" />
+            <Plus className="h-4 w-4 text-primary" />
           </Button>
         </div>
 
         {isAdding && (
-          <div className="flex gap-2 mb-2">
+          <div className="flex gap-2 mb-3">
             <Input
               value={newTaskTitle}
               onChange={(e) => setNewTaskTitle(e.target.value)}
               placeholder="Add a task..."
-              className="h-7 text-xs"
+              className="h-8 text-sm"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') addTask();
                 if (e.key === 'Escape') setIsAdding(false);
               }}
               autoFocus
             />
-            <Button size="sm" className="h-7 px-2 text-xs" onClick={addTask}>
+            <Button size="sm" className="h-8 px-3 text-xs" onClick={addTask}>
               Add
             </Button>
           </div>
         )}
 
-        <ScrollArea className="flex-1 -mx-1 px-1">
+        <ScrollArea className="flex-1 max-h-48">
           <div className="space-y-1">
             {incompleteTasks.length === 0 && completedTasks.length === 0 && !isAdding && (
-              <p className="text-xs text-muted-foreground text-center py-4">
+              <p className="text-sm text-muted-foreground text-center py-6">
                 No tasks yet. Click + to add one.
               </p>
             )}
@@ -128,7 +128,7 @@ export function TaskBar() {
             {incompleteTasks.map(task => (
               <div 
                 key={task.id}
-                className="group flex items-start gap-2 p-2 rounded-md hover:bg-muted/50 transition-colors"
+                className="group flex items-start gap-2.5 p-2.5 rounded-md hover:bg-muted/50 transition-colors"
               >
                 <Checkbox
                   checked={task.completed}
@@ -136,45 +136,45 @@ export function TaskBar() {
                   className="mt-0.5 h-4 w-4"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium leading-tight truncate">{task.title}</p>
+                  <p className="text-sm font-medium leading-tight truncate">{task.title}</p>
                   {task.description && (
-                    <p className="text-[10px] text-muted-foreground truncate">{task.description}</p>
+                    <p className="text-xs text-muted-foreground truncate">{task.description}</p>
                   )}
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={() => deleteTask(task.id)}
                 >
-                  <Trash2 className="h-3 w-3 text-muted-foreground" />
+                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>
               </div>
             ))}
 
             {completedTasks.length > 0 && (
-              <div className="pt-2 border-t border-border/50 mt-2">
-                <p className="text-[10px] text-muted-foreground mb-1 px-2">Completed</p>
+              <div className="pt-3 border-t border-border/50 mt-3">
+                <p className="text-xs text-muted-foreground mb-2 px-2">Completed</p>
                 {completedTasks.slice(0, 3).map(task => (
                   <div 
                     key={task.id}
-                    className="group flex items-start gap-2 p-2 rounded-md opacity-60"
+                    className="group flex items-start gap-2.5 p-2 rounded-md opacity-60"
                   >
                     <Checkbox
                       checked={task.completed}
                       onCheckedChange={() => toggleTask(task.id)}
                       className="mt-0.5 h-4 w-4"
                     />
-                    <p className="text-xs line-through text-muted-foreground flex-1 truncate">
+                    <p className="text-sm line-through text-muted-foreground flex-1 truncate">
                       {task.title}
                     </p>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-5 w-5 opacity-0 group-hover:opacity-100"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100"
                       onClick={() => deleteTask(task.id)}
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 ))}

@@ -518,20 +518,20 @@ export default function Index() {
 
       {/* Dashboard Section - Progress, Tasks, Pomodoro */}
       {user && (
-        <section className="py-4">
-          <div className="container mx-auto px-4 max-w-5xl">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-medium text-foreground">Your Progress</h3>
+        <section className="py-6">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-medium text-foreground">Your Progress</h3>
               <DailyGoalEditor currentGoal={profile?.daily_goal_minutes || 45} compact />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Left: Stats + Activity (takes 2 cols) */}
               <div className="lg:col-span-2">
                 <UnifiedProgressDashboard dailyGoalMinutes={profile?.daily_goal_minutes || 45} />
               </div>
               
-              {/* Right: Tasks & Pomodoro */}
-              <div className="space-y-3">
+              {/* Right: Pomodoro & Tasks */}
+              <div className="space-y-4">
                 <PomodoroTimer />
                 <TaskBar />
               </div>
