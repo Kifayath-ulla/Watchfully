@@ -112,17 +112,17 @@ export function TaskBar() {
   const completedTasks = tasks.filter(t => t.completed);
 
   return (
-    <Card className="bg-card/80 border-border/50 h-full">
+    <Card className="bg-card border-border/50 h-full">
       <CardContent className="p-5 flex flex-col h-full">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
             <ListTodo className="h-5 w-5 text-primary" />
-            <span className="text-base font-medium">Today's Tasks</span>
+            <span className="text-base font-semibold">Today's Tasks</span>
           </div>
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20"
+            className="h-9 w-9 rounded-full bg-primary/10 hover:bg-primary/20"
             onClick={() => setIsAdding(true)}
           >
             <Plus className="h-4 w-4 text-primary" />
@@ -130,31 +130,31 @@ export function TaskBar() {
         </div>
 
         {isAdding && (
-          <div className="space-y-2 mb-4">
+          <div className="space-y-3 mb-5">
             <div className="flex gap-2">
               <Input
                 value={newTaskTitle}
                 onChange={(e) => setNewTaskTitle(e.target.value)}
                 placeholder="Add a task..."
-                className="h-9 text-sm"
+                className="h-10 text-sm"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') addTask();
                   if (e.key === 'Escape') setIsAdding(false);
                 }}
                 autoFocus
               />
-              <Button size="sm" className="h-9 px-4" onClick={addTask}>
+              <Button size="default" className="h-10 px-5" onClick={addTask}>
                 Add
               </Button>
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-2">
               {(Object.keys(priorityConfig) as Priority[]).map((p) => (
                 <button
                   key={p}
                   type="button"
                   onClick={() => setNewTaskPriority(p)}
                   className={cn(
-                    "px-2.5 py-1 text-xs font-medium rounded-md border transition-colors",
+                    "px-3 py-1.5 text-xs font-medium rounded-md border transition-colors",
                     newTaskPriority === p 
                       ? priorityConfig[p].bg 
                       : "bg-muted/40 border-transparent hover:bg-muted",
@@ -169,9 +169,9 @@ export function TaskBar() {
         )}
 
         <ScrollArea className="flex-1">
-          <div className="space-y-1.5 pr-2">
+          <div className="space-y-2 pr-2">
             {incompleteTasks.length === 0 && completedTasks.length === 0 && !isAdding && (
-              <p className="text-sm text-muted-foreground text-center py-8">
+              <p className="text-sm text-muted-foreground text-center py-10">
                 No tasks yet. Click + to add one.
               </p>
             )}
@@ -180,23 +180,23 @@ export function TaskBar() {
               <div 
                 key={task.id}
                 className={cn(
-                  "group flex items-start gap-3 p-3 rounded-lg border transition-colors",
+                  "group flex items-start gap-3 p-4 rounded-lg border transition-colors",
                   priorityConfig[task.priority].bg
                 )}
               >
                 <Checkbox
                   checked={task.completed}
                   onCheckedChange={() => toggleTask(task.id)}
-                  className="mt-0.5 h-4 w-4"
+                  className="mt-0.5 h-5 w-5"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium leading-tight">{task.title}</p>
+                  <p className="text-sm font-medium leading-snug">{task.title}</p>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6">
-                        <Flag className={cn("h-3.5 w-3.5", priorityConfig[task.priority].color)} />
+                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <Flag className={cn("h-4 w-4", priorityConfig[task.priority].color)} />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -206,7 +206,7 @@ export function TaskBar() {
                           onClick={() => updatePriority(task.id, p)}
                           className={priorityConfig[p].color}
                         >
-                          <Flag className="h-3.5 w-3.5 mr-2" />
+                          <Flag className="h-4 w-4 mr-2" />
                           {priorityConfig[p].label}
                         </DropdownMenuItem>
                       ))}
@@ -215,10 +215,10 @@ export function TaskBar() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6"
+                    className="h-7 w-7"
                     onClick={() => deleteTask(task.id)}
                   >
-                    <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Trash2 className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </div>
               </div>
@@ -226,16 +226,16 @@ export function TaskBar() {
 
             {completedTasks.length > 0 && (
               <div className="pt-4 border-t border-border/50 mt-4">
-                <p className="text-xs text-muted-foreground mb-2 px-1">Completed</p>
+                <p className="text-xs text-muted-foreground mb-3 px-1 font-medium">Completed</p>
                 {completedTasks.slice(0, 3).map(task => (
                   <div 
                     key={task.id}
-                    className="group flex items-start gap-3 p-2.5 rounded-md opacity-50 hover:opacity-70 transition-opacity"
+                    className="group flex items-start gap-3 p-3 rounded-md opacity-50 hover:opacity-70 transition-opacity"
                   >
                     <Checkbox
                       checked={task.completed}
                       onCheckedChange={() => toggleTask(task.id)}
-                      className="mt-0.5 h-4 w-4"
+                      className="mt-0.5 h-5 w-5"
                     />
                     <p className="text-sm line-through text-muted-foreground flex-1 truncate">
                       {task.title}
@@ -243,10 +243,10 @@ export function TaskBar() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                      className="h-7 w-7 opacity-0 group-hover:opacity-100"
                       onClick={() => deleteTask(task.id)}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 ))}

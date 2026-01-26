@@ -484,103 +484,102 @@ export default function Index() {
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="py-12 md:py-16">
-        <div className="container mx-auto px-4 text-center max-w-2xl">
-          <h2 className="font-serif text-3xl md:text-4xl font-medium text-foreground tracking-tight mb-3">
-            Watch with intention.
-          </h2>
-          <p className="text-base text-muted-foreground mb-6">
-            Track your progress, set a time commitment, honor your intention.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button size="lg" className="gap-2" disabled={!hasVideos} onClick={handleStartSession}>
-              <Play className="h-4 w-4" />
-              Start a focused session
-            </Button>
-            <Button size="lg" variant="outline" className="gap-2" onClick={() => setShowAddModal(true)}>
-              <Plus className="h-4 w-4" />
-              Add Video/Playlist
-            </Button>
+      {/* Main Content Area */}
+      <main className="flex-1 container mx-auto px-6 py-8 max-w-7xl">
+        {/* Hero Section - Compact and Clean */}
+        <div className="mb-10">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            <div className="space-y-2">
+              <h2 className="font-serif text-4xl md:text-5xl font-medium text-foreground tracking-tight">
+                Watch with intention.
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-md">
+                Track your progress, set a time commitment, honor your intention.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button size="lg" className="h-12 px-6 gap-2 text-base" disabled={!hasVideos} onClick={handleStartSession}>
+                <Play className="h-5 w-5" />
+                Start Session
+              </Button>
+              <Button size="lg" variant="outline" className="h-12 px-6 gap-2 text-base" onClick={() => setShowAddModal(true)}>
+                <Plus className="h-5 w-5" />
+                Add Video
+              </Button>
+            </div>
           </div>
         </div>
-      </section>
 
-      {/* Continue Watching Reminder - only show for logged in users */}
-      {user && (
-        <section className="py-2">
-          <div className="container mx-auto px-4 max-w-4xl">
+        {/* Continue Watching Reminder */}
+        {user && (
+          <div className="mb-8">
             <ContinueWatchingReminder />
           </div>
-        </section>
-      )}
+        )}
 
-      {/* Dashboard Section - Progress & Tasks */}
-      {user && (
-        <section className="py-4">
-          <div className="container mx-auto px-4 max-w-6xl">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-medium text-foreground">Your Progress</h3>
+        {/* Dashboard Grid - Full Width Layout */}
+        {user && (
+          <div className="mb-10">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-xl font-semibold text-foreground">Your Progress</h3>
               <DailyGoalEditor currentGoal={profile?.daily_goal_minutes || 45} compact />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Left: Stats + Activity (takes 2 cols) */}
-              <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+              {/* Progress Dashboard - 3 cols on xl */}
+              <div className="xl:col-span-3">
                 <UnifiedProgressDashboard dailyGoalMinutes={profile?.daily_goal_minutes || 45} />
               </div>
               
-              {/* Right: Tasks */}
-              <div className="min-h-[280px]">
+              {/* Tasks Sidebar */}
+              <div className="xl:col-span-1 min-h-[320px]">
                 <TaskBar />
               </div>
             </div>
           </div>
-        </section>
-      )}
+        )}
 
-      {/* Video Queue or Empty State */}
-      <section className="py-4 flex-1">
-        <div className="container mx-auto px-4 max-w-6xl">
-          {/* Guest Prompt - show when guest has 3+ videos */}
+        {/* Video Queue Section */}
+        <div>
+          {/* Guest Prompt */}
           {isGuestMode && !user && <GuestPrompt videoCount={effectiveVideos.length} />}
           
           {videosLoading ? (
-            <div className="text-center py-16 text-muted-foreground">Loading your videos...</div>
+            <div className="text-center py-20 text-muted-foreground text-lg">Loading your videos...</div>
           ) : hasVideos ? (
-            <div className="space-y-4">
-              {/* Queue Header with Filters */}
-              <div className="flex flex-col gap-3 mb-4">
+            <div className="space-y-5">
+              {/* Queue Header */}
+              <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-lg font-medium text-foreground">Your Queue</h3>
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-xl font-semibold text-foreground">Your Queue</h3>
                     {hasActiveFilters && (
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
                         {displayedCount} of {totalCount}
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     {standaloneVideos.length >= 2 && (
-                      <Button variant="outline" size="sm" onClick={() => setShowCreatePlaylist(true)} className="h-8">
-                        <FolderPlus className="h-4 w-4 mr-1" />
+                      <Button variant="outline" size="default" onClick={() => setShowCreatePlaylist(true)} className="h-10 gap-2">
+                        <FolderPlus className="h-4 w-4" />
                         Create Playlist
                       </Button>
                     )}
                     <Button
                       variant={selectionMode ? "secondary" : "outline"}
-                      size="sm"
+                      size="default"
                       onClick={() => {
                         setSelectionMode(!selectionMode);
                         if (selectionMode) clearSelection();
                       }}
-                      className="h-8"
+                      className="h-10 gap-2"
                     >
-                      <CheckSquare className="h-4 w-4 mr-1" />
+                      <CheckSquare className="h-4 w-4" />
                       Select
                     </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap">
                   <QueueSearch
                     value={searchQuery}
                     onChange={setSearchQuery}
@@ -616,8 +615,8 @@ export default function Index() {
               )}
 
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <div className="grid gap-3">
-                  {/* Render playlists as grouped items */}
+                <div className="grid gap-4">
+                  {/* Playlists */}
                   {filteredPlaylists.map((playlist) => {
                     const playlistVideoList = playlistVideos.get(playlist.id);
                     if (!playlistVideoList || playlistVideoList.length === 0) return null;
@@ -638,7 +637,7 @@ export default function Index() {
                     );
                   })}
 
-                  {/* Render standalone videos */}
+                  {/* Standalone Videos */}
                   {filteredStandaloneVideos.length > 0 && (
                     <SortableContext
                       items={filteredStandaloneVideos.map((v) => v.id)}
@@ -659,11 +658,11 @@ export default function Index() {
                     </SortableContext>
                   )}
 
-                  {/* No results after filtering */}
+                  {/* Empty filter results */}
                   {filteredPlaylists.length === 0 && filteredStandaloneVideos.length === 0 && hasActiveFilters && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p>No videos match your filters.</p>
-                      <Button variant="link" onClick={clearFilters}>
+                    <div className="text-center py-12 text-muted-foreground">
+                      <p className="text-lg mb-2">No videos match your filters.</p>
+                      <Button variant="link" className="text-base" onClick={clearFilters}>
                         Clear filters
                       </Button>
                     </div>
@@ -672,18 +671,18 @@ export default function Index() {
               </DndContext>
             </div>
           ) : (
-            <div className="text-center py-12 px-6 rounded-lg border border-dashed border-border bg-card/30">
-              <p className="text-muted-foreground mb-4">
+            <div className="text-center py-16 px-8 rounded-xl border-2 border-dashed border-border bg-card/50">
+              <p className="text-lg text-muted-foreground mb-5">
                 Your queue is empty. Add a YouTube video or playlist to get started.
               </p>
-              <Button variant="secondary" className="gap-2" onClick={() => setShowAddModal(true)}>
-                <Plus className="h-4 w-4" />
+              <Button size="lg" variant="secondary" className="h-12 px-6 gap-2 text-base" onClick={() => setShowAddModal(true)}>
+                <Plus className="h-5 w-5" />
                 Add your first video
               </Button>
             </div>
           )}
         </div>
-      </section>
+      </main>
 
       <AddVideoModal open={showAddModal} onOpenChange={setShowAddModal} />
 
