@@ -30,12 +30,12 @@ export function TimeCommitmentCard({
   const quickOptions = [15, 30, 45, 60];
 
   return (
-    <div className="bg-card/60 backdrop-blur-sm border border-border/40 rounded-lg px-4 py-2.5">
-      <form onSubmit={handleSubmit} className="flex items-center gap-3 text-sm">
+    <div className="bg-card/60 backdrop-blur-sm border border-border/40 rounded-lg px-3.5 py-2">
+      <form onSubmit={handleSubmit} className="flex items-center gap-2.5 text-xs">
         {/* Time label */}
-        <div className="flex items-center gap-1.5 text-muted-foreground">
-          <Clock className="h-4 w-4" />
-          <span className="hidden sm:inline text-sm font-medium">How much time?</span>
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <Clock className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline text-xs font-medium">How much time?</span>
         </div>
 
         {/* Quick pills */}
@@ -44,7 +44,7 @@ export function TimeCommitmentCard({
             <button
               key={option}
               type="button"
-              className={`h-7 px-3 text-xs font-medium rounded-md transition-colors ${
+              className={`h-6 px-2.5 text-[10px] font-medium rounded-md transition-colors ${
                 minutes === option 
                   ? 'bg-primary text-primary-foreground' 
                   : 'bg-muted/60 text-muted-foreground hover:bg-muted'
@@ -60,38 +60,38 @@ export function TimeCommitmentCard({
             onChange={(e) => setMinutes(parseInt(e.target.value) || 0)}
             min="1"
             max="180"
-            className="w-12 h-7 px-2 text-center border border-input bg-background text-foreground text-xs font-medium focus:outline-none focus:ring-1 focus:ring-ring rounded-md"
+            className="w-10 h-6 px-1.5 text-center border border-input bg-background text-foreground text-[10px] font-medium focus:outline-none focus:ring-1 focus:ring-ring rounded-md"
           />
-          <span className="text-xs text-muted-foreground">min</span>
+          <span className="text-[10px] text-muted-foreground">min</span>
         </div>
 
         {/* Divider */}
-        <div className="w-px h-5 bg-border/60" />
+        <div className="w-px h-4 bg-border/60" />
 
         {/* Stats */}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
+        <div className="flex items-center gap-2.5 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-0.5">
             <span className="text-foreground font-semibold">{progressPercent}%</span>
           </span>
-          <span className="flex items-center gap-1">
-            <TrendingUp className="h-3 w-3" />
+          <span className="flex items-center gap-0.5">
+            <TrendingUp className="h-2.5 w-2.5" />
             <span>{sessionsToday} sessions</span>
           </span>
-          <span className="flex items-center gap-1 text-primary">
-            <Sparkles className="h-3 w-3" />
+          <span className="flex items-center gap-0.5 text-primary">
+            <Sparkles className="h-2.5 w-2.5" />
             <span>Finish today!</span>
           </span>
         </div>
 
         {/* Time remaining + Actions */}
-        <div className="flex items-center gap-2 ml-auto">
-          <span className="text-xs text-muted-foreground whitespace-nowrap">
+        <div className="flex items-center gap-1.5 ml-auto">
+          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
             {remainingMinutes}min left
           </span>
-          <Button type="button" variant="ghost" size="sm" onClick={onSkip} className="h-7 px-3 text-xs">
+          <Button type="button" variant="ghost" size="sm" onClick={onSkip} className="h-6 px-2.5 text-[10px]">
             Skip
           </Button>
-          <Button type="submit" size="sm" className="h-7 px-4 text-xs font-medium">
+          <Button type="submit" size="sm" className="h-6 px-3 text-[10px] font-medium">
             Start watching
           </Button>
         </div>
