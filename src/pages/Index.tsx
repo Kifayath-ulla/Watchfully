@@ -485,25 +485,25 @@ export default function Index() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 container mx-auto px-6 py-8 max-w-7xl">
+      <main className="flex-1 container mx-auto px-5 py-6 max-w-6xl">
         {/* Hero Section - Compact and Clean */}
-        <div className="mb-10">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-            <div className="space-y-2">
-              <h2 className="font-serif text-4xl md:text-5xl font-medium text-foreground tracking-tight">
+        <div className="mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
+            <div className="space-y-1.5">
+              <h2 className="font-serif text-3xl md:text-4xl font-medium text-foreground tracking-tight">
                 Watch with intention.
               </h2>
-              <p className="text-lg text-muted-foreground max-w-md">
+              <p className="text-base text-muted-foreground max-w-md">
                 Track your progress, set a time commitment, honor your intention.
               </p>
             </div>
-            <div className="flex gap-3">
-              <Button size="lg" className="h-12 px-6 gap-2 text-base" disabled={!hasVideos} onClick={handleStartSession}>
-                <Play className="h-5 w-5" />
+            <div className="flex gap-2.5">
+              <Button size="default" className="h-10 px-5 gap-2 text-sm" disabled={!hasVideos} onClick={handleStartSession}>
+                <Play className="h-4 w-4" />
                 Start Session
               </Button>
-              <Button size="lg" variant="outline" className="h-12 px-6 gap-2 text-base" onClick={() => setShowAddModal(true)}>
-                <Plus className="h-5 w-5" />
+              <Button size="default" variant="outline" className="h-10 px-5 gap-2 text-sm" onClick={() => setShowAddModal(true)}>
+                <Plus className="h-4 w-4" />
                 Add Video
               </Button>
             </div>
@@ -519,19 +519,19 @@ export default function Index() {
 
         {/* Dashboard Grid - Full Width Layout */}
         {user && (
-          <div className="mb-10">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-xl font-semibold text-foreground">Your Progress</h3>
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground">Your Progress</h3>
               <DailyGoalEditor currentGoal={profile?.daily_goal_minutes || 45} compact />
             </div>
-            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
               {/* Progress Dashboard - 3 cols on xl */}
               <div className="xl:col-span-3">
                 <UnifiedProgressDashboard dailyGoalMinutes={profile?.daily_goal_minutes || 45} />
               </div>
               
               {/* Tasks Sidebar */}
-              <div className="xl:col-span-1 min-h-[320px]">
+              <div className="xl:col-span-1 min-h-[280px]">
                 <TaskBar />
               </div>
             </div>
@@ -546,40 +546,40 @@ export default function Index() {
           {videosLoading ? (
             <div className="text-center py-20 text-muted-foreground text-lg">Loading your videos...</div>
           ) : hasVideos ? (
-            <div className="space-y-5">
+            <div className="space-y-4">
               {/* Queue Header */}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <h3 className="text-xl font-semibold text-foreground">Your Queue</h3>
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-semibold text-foreground">Your Queue</h3>
                     {hasActiveFilters && (
-                      <span className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
+                      <span className="text-xs text-muted-foreground bg-muted/50 px-2.5 py-0.5 rounded-full">
                         {displayedCount} of {totalCount}
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5">
                     {standaloneVideos.length >= 2 && (
-                      <Button variant="outline" size="default" onClick={() => setShowCreatePlaylist(true)} className="h-10 gap-2">
-                        <FolderPlus className="h-4 w-4" />
+                      <Button variant="outline" size="sm" onClick={() => setShowCreatePlaylist(true)} className="h-9 gap-1.5">
+                        <FolderPlus className="h-3.5 w-3.5" />
                         Create Playlist
                       </Button>
                     )}
                     <Button
                       variant={selectionMode ? "secondary" : "outline"}
-                      size="default"
+                      size="sm"
                       onClick={() => {
                         setSelectionMode(!selectionMode);
                         if (selectionMode) clearSelection();
                       }}
-                      className="h-10 gap-2"
+                      className="h-9 gap-1.5"
                     >
-                      <CheckSquare className="h-4 w-4" />
+                      <CheckSquare className="h-3.5 w-3.5" />
                       Select
                     </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   <QueueSearch
                     value={searchQuery}
                     onChange={setSearchQuery}
@@ -615,7 +615,7 @@ export default function Index() {
               )}
 
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <div className="grid gap-4">
+                <div className="grid gap-3">
                   {/* Playlists */}
                   {filteredPlaylists.map((playlist) => {
                     const playlistVideoList = playlistVideos.get(playlist.id);
@@ -660,9 +660,9 @@ export default function Index() {
 
                   {/* Empty filter results */}
                   {filteredPlaylists.length === 0 && filteredStandaloneVideos.length === 0 && hasActiveFilters && (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <p className="text-lg mb-2">No videos match your filters.</p>
-                      <Button variant="link" className="text-base" onClick={clearFilters}>
+                    <div className="text-center py-10 text-muted-foreground">
+                      <p className="text-base mb-1.5">No videos match your filters.</p>
+                      <Button variant="link" className="text-sm" onClick={clearFilters}>
                         Clear filters
                       </Button>
                     </div>
@@ -671,12 +671,12 @@ export default function Index() {
               </DndContext>
             </div>
           ) : (
-            <div className="text-center py-16 px-8 rounded-xl border-2 border-dashed border-border bg-card/50">
-              <p className="text-lg text-muted-foreground mb-5">
+            <div className="text-center py-14 px-6 rounded-xl border-2 border-dashed border-border bg-card/50">
+              <p className="text-base text-muted-foreground mb-4">
                 Your queue is empty. Add a YouTube video or playlist to get started.
               </p>
-              <Button size="lg" variant="secondary" className="h-12 px-6 gap-2 text-base" onClick={() => setShowAddModal(true)}>
-                <Plus className="h-5 w-5" />
+              <Button size="default" variant="secondary" className="h-10 px-5 gap-2 text-sm" onClick={() => setShowAddModal(true)}>
+                <Plus className="h-4 w-4" />
                 Add your first video
               </Button>
             </div>
