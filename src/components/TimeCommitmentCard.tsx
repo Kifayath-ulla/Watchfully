@@ -17,13 +17,22 @@ export function TimeCommitmentCard({
   sessionsToday = 1,
   progressPercent = 100
 }: TimeCommitmentCardProps) {
-  const [minutes, setMinutes] = useState(30);
+  const [minutes, setMinutes] = useState<string>('30');
   const remainingMinutes = Math.ceil(remainingSeconds / 60);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (minutes > 0 && minutes <= 180) {
-      onStartWatching(minutes);
+    const mins = parseInt(minutes) || 0;
+    if (mins > 0 && mins <= 1440) {
+      onStartWatching(mins);
+    }
+  };
+
+  const handleMinutesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow empty string or valid numbers up to 1440
+    if (value === '' || (/^\d+$/.test(value) && parseInt(value) <= 1440)) {
+      setMinutes(value);
     }
   };
 
@@ -45,21 +54,22 @@ export function TimeCommitmentCard({
               key={option}
               type="button"
               className={`h-8 px-3 text-xs font-medium rounded-lg transition-colors ${
-                minutes === option 
+                minutes === String(option) 
                   ? 'bg-primary text-primary-foreground' 
                   : 'bg-muted/60 text-muted-foreground hover:bg-muted'
               }`}
-              onClick={() => setMinutes(option)}
+              onClick={() => setMinutes(String(option))}
             >
               {option}m
             </button>
           ))}
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={minutes}
-            onChange={(e) => setMinutes(parseInt(e.target.value) || 0)}
-            min="1"
-            max="180"
+            onChange={handleMinutesChange}
+            placeholder="30"
             className="w-12 h-8 px-2 text-center border border-input bg-background text-foreground text-xs font-medium focus:outline-none focus:ring-1 focus:ring-ring rounded-lg"
           />
           <span className="text-xs text-muted-foreground">min</span>
