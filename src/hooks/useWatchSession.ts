@@ -71,6 +71,42 @@ export function useWatchSession() {
         .single();
 
       if (error) throw error;
+
+      // Update daily_goals with the session minutes
+      if (actualMinutes > 0) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        
+        // Try to get existing daily goal
+        const { data: existingGoal } = await supabase
+          .from('daily_goals')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('date', todayStr)
+          .single();
+
+        if (existingGoal) {
+          // Update existing goal
+          await supabase
+            .from('daily_goals')
+            .update({
+              achieved_minutes: (existingGoal.achieved_minutes || 0) + actualMinutes,
+              videos_completed: (existingGoal.videos_completed || 0) + (wasCompleted ? 1 : 0)
+            })
+            .eq('id', existingGoal.id);
+        } else {
+          // Create new daily goal entry
+          await supabase
+            .from('daily_goals')
+            .insert({
+              user_id: user.id,
+              date: todayStr,
+              target_minutes: 45, // Default, will be overridden by profile setting
+              achieved_minutes: actualMinutes,
+              videos_completed: wasCompleted ? 1 : 0
+            });
+        }
+      }
+
       return data as WatchSession;
     },
     onSuccess: () => {
@@ -78,6 +114,7 @@ export function useWatchSession() {
       sessionIdRef.current = null;
       queryClient.invalidateQueries({ queryKey: ['videos', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['watch_sessions', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['daily_goals'] });
     }
   });
 
