@@ -5,10 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, PlayCircle, GripVertical } from 'lucide-react';
+import { Trash2, PlayCircle, GripVertical, Check, RotateCcw } from 'lucide-react';
 import { Video } from '@/types/video';
 import { formatDuration, calculateProgress } from '@/lib/youtube';
 import { VideoPreviewHover } from '@/components/VideoPreviewHover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface SortableVideoCardProps {
   video: Video;
@@ -18,6 +24,8 @@ interface SortableVideoCardProps {
   selectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (videoId: string) => void;
+  onMarkComplete?: (id: string) => void;
+  onMarkIncomplete?: (id: string) => void;
 }
 
 export function SortableVideoCard({ 
@@ -28,6 +36,8 @@ export function SortableVideoCard({
   selectionMode,
   isSelected,
   onToggleSelect,
+  onMarkComplete,
+  onMarkIncomplete,
 }: SortableVideoCardProps) {
   const {
     attributes,
@@ -143,14 +153,39 @@ export function SortableVideoCard({
                 </div>
               </div>
 
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-destructive"
-                onClick={(e) => onDelete(e, video.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                  {video.status !== 'completed' && onMarkComplete && (
+                    <DropdownMenuItem onClick={() => onMarkComplete(video.id)}>
+                      <Check className="h-4 w-4 mr-2" />
+                      Mark as complete
+                    </DropdownMenuItem>
+                  )}
+                  {video.status === 'completed' && onMarkIncomplete && (
+                    <DropdownMenuItem onClick={() => onMarkIncomplete(video.id)}>
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Mark as incomplete
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem 
+                    className="text-destructive focus:text-destructive"
+                    onClick={(e) => onDelete(e as any, video.id)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Remove from queue
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>

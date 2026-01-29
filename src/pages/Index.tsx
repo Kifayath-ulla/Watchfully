@@ -16,7 +16,7 @@ import { ContinueWatchingReminder } from "@/components/ContinueWatchingReminder"
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SortableVideoCard } from "@/components/SortableVideoCard";
 import { PlaylistGroup } from "@/components/PlaylistGroup";
-import { GoalNotifications } from "@/components/GoalNotifications";
+
 import { QueueFilters } from "@/components/QueueFilters";
 import { BulkActionBar } from "@/components/BulkActionBar";
 import { WeeklyStreakDots } from "@/components/WeeklyStreakDots";
@@ -68,6 +68,8 @@ export default function Index() {
     isLoading: videosLoading,
     deleteVideo,
     reorderVideos,
+    markComplete,
+    markIncomplete,
     bulkMarkComplete,
     bulkDelete,
     bulkUpdateIntent,
@@ -390,8 +392,7 @@ export default function Index() {
       {/* Onboarding Tutorial */}
       <OnboardingTutorial forceOpen={showTutorial} onClose={() => setShowTutorial(false)} />
 
-      {/* Goal Notifications - only for logged in users */}
-      {user && <GoalNotifications />}
+      {/* Goal Notifications removed per user request */}
 
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
@@ -633,6 +634,8 @@ export default function Index() {
                         selectionMode={selectionMode}
                         selectedVideoIds={selectedVideoIds}
                         onToggleSelect={toggleSelection}
+                        onMarkComplete={(id) => markComplete.mutate(id)}
+                        onMarkIncomplete={(id) => markIncomplete.mutate(id)}
                       />
                     );
                   })}
@@ -653,6 +656,8 @@ export default function Index() {
                           selectionMode={selectionMode}
                           isSelected={selectedVideoIds.has(video.id)}
                           onToggleSelect={toggleSelection}
+                          onMarkComplete={(id) => markComplete.mutate(id)}
+                          onMarkIncomplete={(id) => markIncomplete.mutate(id)}
                         />
                       ))}
                     </SortableContext>
