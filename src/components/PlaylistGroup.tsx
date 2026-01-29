@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ChevronDown, ChevronRight, PlayCircle, Trash2, ListVideo } from 'lucide-react';
+import { ChevronDown, ChevronRight, PlayCircle, Trash2, ListVideo, Play } from 'lucide-react';
 import { Video, Playlist } from '@/types/video';
 import { formatDuration } from '@/lib/youtube';
 import { SortableVideoCard } from './SortableVideoCard';
@@ -22,6 +23,8 @@ interface PlaylistGroupProps {
   selectionMode?: boolean;
   selectedVideoIds?: Set<string>;
   onToggleSelect?: (videoId: string) => void;
+  onMarkComplete?: (id: string) => void;
+  onMarkIncomplete?: (id: string) => void;
 }
 
 export function PlaylistGroup({
@@ -34,7 +37,10 @@ export function PlaylistGroup({
   selectionMode,
   selectedVideoIds,
   onToggleSelect,
+  onMarkComplete,
+  onMarkIncomplete,
 }: PlaylistGroupProps) {
+  const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Sort videos by playlist_order (chronological order from playlist)
@@ -47,14 +53,39 @@ export function PlaylistGroup({
   const completedCount = videos.filter(v => v.status === 'completed').length;
   const progress = totalDuration > 0 ? Math.round((watchedDuration / totalDuration) * 100) : 0;
 
+  // Find the next video to watch (first non-completed, or first in-progress)
+  const getNextVideo = () => {
+    // First, look for an in-progress video
+    const inProgressVideo = sortedVideos.find(v => v.status === 'in_progress');
+    if (inProgressVideo) return inProgressVideo;
+    
+    // Otherwise, find the first non-completed video
+    const nextUnwatched = sortedVideos.find(v => v.status !== 'completed');
+    if (nextUnwatched) return nextUnwatched;
+    
+    // All completed - return first video
+    return sortedVideos[0];
+  };
+
   const handlePlaylistClick = () => {
     setIsExpanded(!isExpanded);
+  };
+
+  const handleContinuePlaylist = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const nextVideo = getNextVideo();
+    if (nextVideo) {
+      navigate(`/watch/${nextVideo.id}`);
+    }
   };
 
   const handleDeletePlaylist = (e: React.MouseEvent) => {
     e.stopPropagation();
     onPlaylistDelete?.(playlist.id);
   };
+
+  const nextVideo = getNextVideo();
+  const hasInProgress = sortedVideos.some(v => v.status === 'in_progress');
 
   return (
     <div className="space-y-2">
@@ -98,6 +129,9 @@ export function PlaylistGroup({
                   </div>
                   <p className="text-sm text-muted-foreground mb-2 ml-6">
                     {completedCount} of {videos.length} videos completed
+                    {hasInProgress && nextVideo && (
+                      <span className="text-primary"> • Up next: #{(nextVideo.playlist_order ?? 0) + 1}</span>
+                    )}
                   </p>
                   <div className="flex items-center gap-2 mb-3 ml-6">
                     <Badge variant="secondary" className="text-xs">
@@ -120,16 +154,29 @@ export function PlaylistGroup({
                   </div>
                 </div>
 
-                {onPlaylistDelete && (
+                <div className="flex items-center gap-1">
+                  {/* Continue/Start button */}
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-destructive"
-                    onClick={handleDeletePlaylist}
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs"
+                    onClick={handleContinuePlaylist}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Play className="h-3.5 w-3.5" />
+                    {hasInProgress ? 'Continue' : 'Start'}
                   </Button>
-                )}
+                  
+                  {onPlaylistDelete && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={handleDeletePlaylist}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -148,7 +195,7 @@ export function PlaylistGroup({
                 <div className="absolute -left-[1.35rem] top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-muted border-2 border-background flex items-center justify-center">
                   <span className="text-xs font-semibold text-foreground">{index + 1}</span>
                 </div>
-                <SortableVideoCard
+              <SortableVideoCard
                   video={video}
                   onDelete={onVideoDelete}
                   onClick={onVideoClick}
@@ -156,6 +203,8 @@ export function PlaylistGroup({
                   selectionMode={selectionMode}
                   isSelected={selectedVideoIds?.has(video.id)}
                   onToggleSelect={onToggleSelect}
+                  onMarkComplete={onMarkComplete}
+                  onMarkIncomplete={onMarkIncomplete}
                 />
               </div>
             ))}

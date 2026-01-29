@@ -192,6 +192,34 @@ export function useVideos() {
     }
   });
 
+  // Mark as incomplete (undo accidental complete)
+  const markIncomplete = useMutation({
+    mutationFn: async (videoId: string) => {
+      if (!user) throw new Error('Not authenticated');
+      
+      const { data, error } = await supabase
+        .from('videos')
+        .update({
+          status: 'in_progress' as VideoStatus,
+          completed_at: null
+        })
+        .eq('id', videoId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as Video;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['videos', user?.id] });
+      toast({
+        title: 'Marked as incomplete',
+        description: 'Video moved back to in progress.',
+      });
+    }
+  });
+
   // Bulk mark as complete (returns previous states for undo)
   const bulkMarkComplete = useMutation({
     mutationFn: async (videoIds: string[]) => {
@@ -385,6 +413,7 @@ export function useVideos() {
     updateVideoIntent,
     deleteVideo,
     markComplete,
+    markIncomplete,
     bulkMarkComplete,
     bulkDelete,
     bulkUpdateIntent,
