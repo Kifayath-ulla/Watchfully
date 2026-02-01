@@ -27,6 +27,7 @@ import { GuestPrompt } from "@/components/GuestPrompt";
 import { DailyGoalEditor } from "@/components/DailyGoalEditor";
 import { Footer } from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -358,9 +359,9 @@ export default function Index() {
           title: 'Video completed',
           description: 'Well done.',
           action: (
-            <Button variant="outline" size="sm" onClick={() => markIncomplete.mutate(id)}>
+            <ToastAction altText="Undo" onClick={() => markIncomplete.mutate(id)}>
               Undo
-            </Button>
+            </ToastAction>
           ),
         });
       }
