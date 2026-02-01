@@ -164,14 +164,13 @@ export function SortableVideoCard({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                  {video.status !== 'completed' && onMarkComplete && (
-                    <DropdownMenuItem onClick={() => onMarkComplete(video.id)}>
+                  {video.status !== 'completed' ? (
+                    <DropdownMenuItem onClick={() => onMarkComplete?.(video.id)}>
                       <Check className="h-4 w-4 mr-2" />
                       Mark as complete
                     </DropdownMenuItem>
-                  )}
-                  {video.status === 'completed' && onMarkIncomplete && (
-                    <DropdownMenuItem onClick={() => onMarkIncomplete(video.id)}>
+                  ) : (
+                    <DropdownMenuItem onClick={() => onMarkIncomplete?.(video.id)}>
                       <RotateCcw className="h-4 w-4 mr-2" />
                       Mark as incomplete
                     </DropdownMenuItem>
