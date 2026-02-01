@@ -351,6 +351,22 @@ export default function Index() {
     await deleteVideo.mutateAsync(id);
   };
 
+  const handleMarkComplete = (id: string) => {
+    markComplete.mutate(id, {
+      onSuccess: () => {
+        toast({
+          title: 'Video completed',
+          description: 'Well done.',
+          action: (
+            <Button variant="outline" size="sm" onClick={() => markIncomplete.mutate(id)}>
+              Undo
+            </Button>
+          ),
+        });
+      }
+    });
+  };
+
   const handleVideoClick = (video: Video) => {
     navigate(`/watch/${video.id}`);
   };
@@ -634,7 +650,7 @@ export default function Index() {
                         selectionMode={selectionMode}
                         selectedVideoIds={selectedVideoIds}
                         onToggleSelect={toggleSelection}
-                        onMarkComplete={(id) => markComplete.mutate(id)}
+                        onMarkComplete={handleMarkComplete}
                         onMarkIncomplete={(id) => markIncomplete.mutate(id)}
                       />
                     );
@@ -656,7 +672,7 @@ export default function Index() {
                           selectionMode={selectionMode}
                           isSelected={selectedVideoIds.has(video.id)}
                           onToggleSelect={toggleSelection}
-                          onMarkComplete={(id) => markComplete.mutate(id)}
+                          onMarkComplete={handleMarkComplete}
                           onMarkIncomplete={(id) => markIncomplete.mutate(id)}
                         />
                       ))}
