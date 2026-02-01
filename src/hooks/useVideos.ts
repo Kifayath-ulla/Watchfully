@@ -185,10 +185,6 @@ export function useVideos() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos', user?.id] });
-      toast({
-        title: 'Video completed',
-        description: 'Well done.',
-      });
     }
   });
 
