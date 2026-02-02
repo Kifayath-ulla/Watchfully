@@ -18,6 +18,7 @@ import { PlaybackControls } from '@/components/PlaybackControls';
 import { TimeCommitmentCard } from '@/components/TimeCommitmentCard';
 import { PlaylistSidebar } from '@/components/PlaylistSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { TranscriptPanel } from '@/components/TranscriptPanel';
 import { cn } from '@/lib/utils';
 
 export default function Watch() {
@@ -40,7 +41,7 @@ export default function Watch() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   
-  const { setPlayer, play, pause, seekRelative, setPlaybackRate, playbackRate } = useYouTubePlayer();
+  const { setPlayer, play, pause, seekTo, seekRelative, setPlaybackRate, playbackRate } = useYouTubePlayer();
   const { startSession, endSession, updateProgress, isSessionActive } = useWatchSession();
   
   const lastSaveRef = useRef<number>(0);
@@ -524,7 +525,13 @@ export default function Watch() {
                 onPlaybackRateChange={setPlaybackRate}
               />
 
-              {/* Progress Bar */}
+              {/* Transcript Panel */}
+              <TranscriptPanel
+                videoId={video.id}
+                youtubeVideoId={video.youtube_video_id}
+                currentTime={currentTime}
+                onSeek={seekTo}
+              />
               <div className="space-y-1.5">
                 <Progress value={progress} className="h-2" />
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
