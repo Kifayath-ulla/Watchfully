@@ -25,6 +25,7 @@ interface PlaylistGroupProps {
   onToggleSelect?: (videoId: string) => void;
   onMarkComplete?: (id: string) => void;
   onMarkIncomplete?: (id: string) => void;
+  onWatchAgain?: (id: string) => void;
 }
 
 export function PlaylistGroup({
@@ -39,6 +40,7 @@ export function PlaylistGroup({
   onToggleSelect,
   onMarkComplete,
   onMarkIncomplete,
+  onWatchAgain,
 }: PlaylistGroupProps) {
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -205,6 +207,7 @@ export function PlaylistGroup({
                   onToggleSelect={onToggleSelect}
                   onMarkComplete={onMarkComplete}
                   onMarkIncomplete={onMarkIncomplete}
+                  onWatchAgain={onWatchAgain}
                 />
               </div>
             ))}
