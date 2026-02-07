@@ -71,6 +71,7 @@ export default function Index() {
     reorderVideos,
     markComplete,
     markIncomplete,
+    watchAgain,
     bulkMarkComplete,
     bulkDelete,
     bulkUpdateIntent,
@@ -368,6 +369,23 @@ export default function Index() {
     });
   };
 
+  const handleWatchAgain = (id: string) => {
+    const video = videos.find(v => v.id === id);
+    watchAgain.mutate(id, {
+      onSuccess: () => {
+        toast({
+          title: 'Ready to rewatch',
+          description: `"${video?.title || 'Video'}" reset to start.`,
+          action: (
+            <ToastAction altText="Undo" onClick={() => markComplete.mutate(id)}>
+              Undo
+            </ToastAction>
+          ),
+        });
+      }
+    });
+  };
+
   const handleVideoClick = (video: Video) => {
     navigate(`/watch/${video.id}`);
   };
@@ -653,6 +671,7 @@ export default function Index() {
                         onToggleSelect={toggleSelection}
                         onMarkComplete={handleMarkComplete}
                         onMarkIncomplete={(id) => markIncomplete.mutate(id)}
+                        onWatchAgain={handleWatchAgain}
                       />
                     );
                   })}
@@ -675,6 +694,7 @@ export default function Index() {
                           onToggleSelect={toggleSelection}
                           onMarkComplete={handleMarkComplete}
                           onMarkIncomplete={(id) => markIncomplete.mutate(id)}
+                          onWatchAgain={handleWatchAgain}
                         />
                       ))}
                     </SortableContext>

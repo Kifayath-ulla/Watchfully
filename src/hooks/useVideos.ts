@@ -223,7 +223,6 @@ export function useVideos() {
     }
   });
 
-  // Mark as incomplete (undo accidental complete)
   const markIncomplete = useMutation({
     mutationFn: async (videoId: string) => {
       if (!user) throw new Error('Not authenticated');
@@ -248,6 +247,30 @@ export function useVideos() {
         title: 'Marked as incomplete',
         description: 'Video moved back to in progress.',
       });
+    }
+  });
+
+  const watchAgain = useMutation({
+    mutationFn: async (videoId: string) => {
+      if (!user) throw new Error('Not authenticated');
+      
+      const { data, error } = await supabase
+        .from('videos')
+        .update({
+          status: 'not_started' as VideoStatus,
+          current_position_seconds: 0,
+          completed_at: null
+        })
+        .eq('id', videoId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as Video;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['videos', user?.id] });
     }
   });
 
@@ -446,6 +469,7 @@ export function useVideos() {
     deleteVideo,
     markComplete,
     markIncomplete,
+    watchAgain,
     bulkMarkComplete,
     bulkDelete,
     bulkUpdateIntent,
