@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useVideos } from '@/hooks/useVideos';
 import { usePlaylists } from '@/hooks/usePlaylists';
+import { Progress } from '@/components/ui/progress';
 import { extractVideoId, extractPlaylistId, fetchVideoDetails, isPlaylistUrl } from '@/lib/youtube';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,10 +43,11 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
   const [intent, setIntent] = useState<string>('curiosity');
   const [customIntent, setCustomIntent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [importProgress, setImportProgress] = useState<string | null>(null);
   const [urlType, setUrlType] = useState<'video' | 'playlist' | null>(null);
   const { user } = useAuth();
   const { isGuestMode, addGuestVideo } = useGuest();
-  const { addVideo } = useVideos();
+  const { addVideo, addVideosBatch } = useVideos();
   const { addPlaylist } = usePlaylists();
   const { toast } = useToast();
 
@@ -155,6 +157,8 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
 
         const playlistData = data as PlaylistData;
         
+        setImportProgress('Creating playlist...');
+        
         const createdPlaylist = await addPlaylist.mutateAsync({
           youtube_playlist_id: playlistId,
           title: playlistData.playlistTitle,
@@ -164,31 +168,25 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
           custom_intent: intent === 'custom' ? customIntent : undefined,
         });
 
-        let addedCount = 0;
-        let failedCount = 0;
+        setImportProgress(`Adding ${playlistData.videos.length} videos...`);
 
-        for (const video of playlistData.videos) {
-          try {
-            await addVideo.mutateAsync({
-              youtube_video_id: video.videoId,
-              title: video.title,
-              thumbnail_url: video.thumbnail,
-              channel_name: video.channelTitle,
-              duration_seconds: video.durationSeconds,
-              intent: intent as VideoIntent,
-              custom_intent: intent === 'custom' ? customIntent : undefined,
-              playlist_id: createdPlaylist.id,
-              playlist_order: video.position,
-            });
-            addedCount++;
-          } catch {
-            failedCount++;
-          }
-        }
+        const videosToInsert = playlistData.videos.map(video => ({
+          youtube_video_id: video.videoId,
+          title: video.title,
+          thumbnail_url: video.thumbnail,
+          channel_name: video.channelTitle,
+          duration_seconds: video.durationSeconds,
+          intent: intent as VideoIntent,
+          custom_intent: intent === 'custom' ? customIntent : undefined,
+          playlist_id: createdPlaylist.id,
+          playlist_order: video.position,
+        }));
+
+        await addVideosBatch.mutateAsync(videosToInsert);
 
         toast({
           title: 'Playlist imported',
-          description: `Added ${addedCount} videos from "${playlistData.playlistTitle}"${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
+          description: `Added ${playlistData.videos.length} videos from "${playlistData.playlistTitle}"`,
         });
       } else {
         const videoId = extractVideoId(url);
@@ -228,6 +226,7 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
       });
     } finally {
       setIsLoading(false);
+      setImportProgress(null);
     }
   };
 
@@ -297,13 +296,20 @@ export function AddVideoModal({ open, onOpenChange }: AddVideoModalProps) {
             </div>
           )}
 
+          {importProgress && (
+            <div className="space-y-2 py-2">
+              <p className="text-sm text-muted-foreground">{importProgress}</p>
+              <Progress value={undefined} className="h-1.5 animate-pulse" />
+            </div>
+          )}
+
           <div className="flex gap-2 justify-end">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading || !url.trim()}>
               {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {isLoading ? 'Importing...' : urlType === 'playlist' ? 'Import playlist' : 'Add video'}
+              {isLoading ? (importProgress || 'Importing...') : urlType === 'playlist' ? 'Import playlist' : 'Add video'}
             </Button>
           </div>
         </form>
