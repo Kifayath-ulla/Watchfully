@@ -74,6 +74,41 @@ export function useVideos() {
     }
   });
 
+  const addVideosBatch = useMutation({
+    mutationFn: async (videos: {
+      youtube_video_id: string;
+      title: string;
+      channel_name?: string;
+      thumbnail_url?: string;
+      duration_seconds: number;
+      intent?: VideoIntent;
+      custom_intent?: string;
+      playlist_id?: string;
+      playlist_order?: number;
+    }[]) => {
+      if (!user) throw new Error('Not authenticated');
+      
+      const rows = videos.map(v => ({ user_id: user.id, ...v }));
+      const { data, error } = await supabase
+        .from('videos')
+        .insert(rows)
+        .select();
+      
+      if (error) throw error;
+      return data as Video[];
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['videos', user?.id] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Could not add videos',
+        description: error.message,
+        variant: 'destructive'
+      });
+    }
+  });
+
   const updateVideoProgress = useMutation({
     mutationFn: async ({ 
       videoId, 
@@ -405,6 +440,7 @@ export function useVideos() {
     isLoading: videosQuery.isLoading,
     error: videosQuery.error,
     addVideo,
+    addVideosBatch,
     updateVideoProgress,
     updateVideoIntent,
     deleteVideo,
