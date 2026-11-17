@@ -1,47 +1,34 @@
-# Video Progress & Playlist Organizer
+# Watchfully
 
-A clean, minimal web app to track video progress, organize playlists, and resume exactly where you left off — across devices.
+A web app for watching with intention. Track video progress, organize playlists, set a time commitment, and resume where you left off, including across devices when you sign in.
 
-## ✨ Features
+## Features
 
-* 📺 Track video watch progress automatically
-* 📂 Create and manage custom playlists
-* 🔄 Resume playback from last watched position
-* ☁️ Sync progress across devices (sign-in based)
-* ⚡ Fast, lightweight, and distraction-free UI
+- Track watch progress automatically
+- Create and manage playlists
+- Resume from the last position
+- Daily goals, streaks, and a progress dashboard
+- Sign-in sync across devices
 
-## 🧠 Why this exists
+## Tech stack
 
-Most video platforms don’t give you fine-grained control over **what you’re watching**, **why**, and **how far you’ve progressed** — especially when learning from long-form content.
+- Vite
+- TypeScript
+- React
+- shadcn/ui
+- Tailwind CSS
+- Supabase
 
-This project is built to solve that.
+## Run locally
 
-## 🛠 Tech Stack
+```bash
+npm install
+```
 
-> Vite
-> TypeScript
-> React
-> shadcn-ui
-> Tailwind CSS
+Create a `.env` file with `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and `VITE_SUPABASE_PROJECT_ID`, then:
 
-## 🔒 Privacy
+```bash
+npm run dev
+```
 
-* No unnecessary data collection
-* Only essential data stored for progress & playlists
-* User data stays private
-
-## 🧪 Status
-
-This project is actively being developed.
-Expect bugs, improvements, and frequent updates.
-
-## ❤️ Credits
-
-Made with love by **kiffu <3**
-
-## 📬 Feedback & Contributions
-
-Feedback, issues, and pull requests are welcome.
-If you’re using this to learn or build — that’s already a win.
-
-*If you like the idea, star the repo and share it:p*
+Open the local URL Vite prints, usually http://localhost:5173.
